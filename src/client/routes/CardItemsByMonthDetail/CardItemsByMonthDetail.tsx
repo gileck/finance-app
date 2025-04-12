@@ -287,8 +287,8 @@ export const CardItemsByMonthDetail = () => {
           <TabPanel value={tabValue} index={1}>
             <CardItemsList 
               cardItems={cardItems} 
-              onEdit={handleEditClick} 
-              onDelete={handleDeleteClick}
+              onEditClick={handleEditClick} 
+              onDeleteClick={handleDeleteClick}
             />
           </TabPanel>
         </>

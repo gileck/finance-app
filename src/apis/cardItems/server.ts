@@ -154,9 +154,9 @@ export const getAllCardItems = async (
     let filteredItems = { ...cardItems };
     
     if (request.filter) {
-      const { category, startDate, endDate } = request.filter;
+      const { category, startDate, endDate, pendingTransactionOnly } = request.filter;
       
-      if (category || startDate || endDate) {
+      if (category || startDate || endDate || pendingTransactionOnly) {
         filteredItems = Object.entries(cardItems).reduce((filtered, [id, item]) => {
           let include = true;
           
@@ -178,6 +178,10 @@ export const getAllCardItems = async (
             if (itemDate > filterEndDate) {
               include = false;
             }
+          }
+          
+          if (pendingTransactionOnly && !item.PendingTransaction) {
+            include = false;
           }
           
           if (include) {

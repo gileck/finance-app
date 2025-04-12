@@ -9,6 +9,7 @@ export interface CardItem {
   Card: boolean;
   DisplayName?: string;
   RawAmount?: number;
+  PendingTransaction?: boolean;
 }
 
 export interface MonthlyTotal {
@@ -25,6 +26,7 @@ export interface GetCardItemsRequest {
     category?: string;
     startDate?: string;
     endDate?: string;
+    pendingTransactionOnly?: boolean;
   };
   // Pagination parameters
   pagination?: {

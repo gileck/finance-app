@@ -11,7 +11,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  CircularProgress
+  CircularProgress,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { CardItem } from '@/apis/cardItems/types';
 
@@ -199,6 +201,18 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
               onChange={(e) => handleFieldChange('Comments', e.target.value)}
               margin="normal"
               disabled={loading}
+            />
+          </Box>
+          <Box sx={{ width: '100%', mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={editedItem.PendingTransaction || false}
+                  onChange={(e) => handleFieldChange('PendingTransaction', e.target.checked)}
+                  disabled={loading}
+                />
+              }
+              label="Pending Transaction"
             />
           </Box>
         </Box>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Alert, Typography } from '@mui/material';
+import { Box, Alert } from '@mui/material';
 import { getCardItems, getMonthlyTotals } from '@/apis/cardItems/client';
 import { CardItem, MonthlyTotal } from '@/apis/cardItems/types';
 import { CurrentMonthSpending } from './CurrentMonthSpending';

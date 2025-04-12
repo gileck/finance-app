@@ -14,21 +14,23 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button
+  Button,
+  Tooltip
 } from '@mui/material';
 import { 
   Edit as EditIcon, 
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  ErrorOutline as ErrorOutlineIcon
 } from '@mui/icons-material';
 import { CardItem } from '@/apis/cardItems/types';
 
 interface CardItemsListProps {
   cardItems: Record<string, CardItem>;
-  onEdit: (item: CardItem) => void;
-  onDelete: (id: string) => void;
-  setMonthRef?: (monthKey: string, element: HTMLDivElement | null) => void;
+  onEditClick: (item: CardItem) => void;
+  onDeleteClick: (id: string) => void;
+  monthRefs?: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
 }
 
 // Helper to format date
@@ -43,7 +45,7 @@ const formatDate = (dateString: string): string => {
 
 // Helper to format currency
 const formatCurrency = (amount: number, currency: string): string => {
-  // For NIS currency, use the ₪ symbol
+  // For NIS currency, use the symbol
   if (currency === 'NIS') {
     return `₪${amount.toFixed(2)}`;
   }
@@ -101,9 +103,9 @@ const calculateMonthTotal = (items: CardItem[]): { amount: number; currency: str
 
 export const CardItemsList: React.FC<CardItemsListProps> = ({ 
   cardItems, 
-  onEdit, 
-  onDelete,
-  setMonthRef 
+  onEditClick, 
+  onDeleteClick,
+  monthRefs 
 }) => {
   const groupedItems = groupByMonth(cardItems);
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
@@ -127,7 +129,7 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
   // Confirm delete
   const confirmDelete = () => {
     if (itemToDelete) {
-      onDelete(itemToDelete);
+      onDeleteClick(itemToDelete);
       setItemToDelete(null);
     }
     setDeleteDialogOpen(false);
@@ -161,7 +163,11 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
               key={monthKey} 
               elevation={2} 
               sx={{ mb: 3, overflow: 'hidden' }}
-              ref={element => setMonthRef && setMonthRef(monthKey, element)}
+              ref={element => {
+                if (monthRefs && element) {
+                  monthRefs.current[monthKey] = element;
+                }
+              }}
             >
               <Box 
                 p={2} 
@@ -199,9 +205,20 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                       <ListItem>
                         <ListItemText
                           primary={
-                            <Typography variant="body1" fontWeight="medium">
-                              {item.DisplayName || item.Name}
-                            </Typography>
+                            <Box display="flex" alignItems="center">
+                              <Typography variant="body1" fontWeight="medium">
+                                {item.DisplayName || item.Name}
+                              </Typography>
+                              {item.PendingTransaction && (
+                                <Tooltip title="Pending Transaction" arrow>
+                                  <ErrorOutlineIcon 
+                                    color="warning" 
+                                    fontSize="small" 
+                                    sx={{ ml: 1 }}
+                                  />
+                                </Tooltip>
+                              )}
+                            </Box>
                           }
                           secondary={
                             <Box mt={0.5}>
@@ -231,7 +248,7 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                               <IconButton 
                                 edge="end" 
                                 aria-label="edit"
-                                onClick={() => onEdit(item)}
+                                onClick={() => onEditClick(item)}
                                 size="small"
                               >
                                 <EditIcon fontSize="small" />

@@ -6,24 +6,27 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  SelectChangeEvent,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Chip,
+  Stack,
+  Tooltip,
+  IconButton
 } from '@mui/material';
 import { 
   getCardItems
 } from '@/apis/cardItems/client';
-import { CardItem } from '@/apis/cardItems/types';
+import { CardItem, GetCardItemsRequest } from '@/apis/cardItems/types';
 import { CardItemsList } from './CardItemsList';
 import { CardItemEditDialog } from '@/client/components/shared/CardItemEditDialog';
 import { updateCardItem, deleteCardItem } from '@/client/utils/cardItemOperations';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
+import { AdvancedFilterDialog, FilterOptions } from '@/client/components/filters/AdvancedFilterDialog';
+import { format } from 'date-fns';
 
 // Number of months to load initially
 const INITIAL_MONTHS = 2;
@@ -41,7 +44,6 @@ export const CardItems = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [offset, setOffset] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -52,11 +54,116 @@ export const CardItems = () => {
     message: '',
     severity: 'info'
   });
+  
+  // Advanced filter states
+  const [openFilterDialog, setOpenFilterDialog] = useState<boolean>(false);
+  const [activeFilters, setActiveFilters] = useState<FilterOptions>({
+    categories: [],
+    startDate: null,
+    endDate: null,
+    minAmount: null,
+    maxAmount: null,
+    searchTerm: '',
+    sortBy: 'date',
+    sortDirection: 'desc',
+    pendingTransactionOnly: false
+  });
+  const [hasActiveFilters, setHasActiveFilters] = useState<boolean>(false);
 
   // References for infinite scrolling
   const monthRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Fetch card items with pagination
+  // Check if filters are active
+  useEffect(() => {
+    const isActive = 
+      (activeFilters.categories && activeFilters.categories.length > 0) ||
+      activeFilters.startDate !== null ||
+      activeFilters.endDate !== null ||
+      activeFilters.minAmount !== null ||
+      activeFilters.maxAmount !== null ||
+      (activeFilters.searchTerm && activeFilters.searchTerm.trim() !== '') ||
+      (activeFilters.sortBy && activeFilters.sortBy !== 'date') ||
+      (activeFilters.sortDirection && activeFilters.sortDirection !== 'desc') ||
+      activeFilters.pendingTransactionOnly;
+    
+    setHasActiveFilters(isActive);
+  }, [activeFilters]);
+
+  // Convert filter options to API request format
+  const createFilterRequest = useCallback((currentOffset: number, limit: number): GetCardItemsRequest => {
+    const request: GetCardItemsRequest = {
+      pagination: {
+        limit,
+        offset: currentOffset
+      }
+    };
+
+    // Build filter object
+    type FilterType = {
+      categories?: string[];
+      startDate?: string;
+      endDate?: string;
+      minAmount?: number;
+      maxAmount?: number;
+      searchTerm?: string;
+      sortBy?: string;
+      sortDirection?: string;
+      pendingTransactionOnly?: boolean;
+    };
+    
+    const filter: FilterType = {};
+    
+    // Add categories
+    if (activeFilters.categories && activeFilters.categories.length > 0) {
+      filter.categories = activeFilters.categories;
+    }
+    
+    // Add date range
+    if (activeFilters.startDate) {
+      filter.startDate = format(activeFilters.startDate, 'yyyy-MM-dd');
+    }
+    
+    if (activeFilters.endDate) {
+      filter.endDate = format(activeFilters.endDate, 'yyyy-MM-dd');
+    }
+    
+    // Add amount range
+    if (activeFilters.minAmount !== null) {
+      filter.minAmount = activeFilters.minAmount;
+    }
+    
+    if (activeFilters.maxAmount !== null) {
+      filter.maxAmount = activeFilters.maxAmount;
+    }
+    
+    // Add search term
+    if (activeFilters.searchTerm && activeFilters.searchTerm.trim() !== '') {
+      filter.searchTerm = activeFilters.searchTerm.trim();
+    }
+    
+    // Add sorting
+    if (activeFilters.sortBy) {
+      filter.sortBy = activeFilters.sortBy;
+    }
+    
+    if (activeFilters.sortDirection) {
+      filter.sortDirection = activeFilters.sortDirection;
+    }
+    
+    // Add pending transaction filter
+    if (activeFilters.pendingTransactionOnly) {
+      filter.pendingTransactionOnly = true;
+    }
+    
+    // Only add filter object if it has properties
+    if (Object.keys(filter).length > 0) {
+      request.filter = filter;
+    }
+    
+    return request;
+  }, [activeFilters]);
+
+  // Fetch card items with pagination and filters
   const fetchCardItems = useCallback(async (currentOffset: number, limit: number, append: boolean = false) => {
     if (append) {
       setLoadingMore(true);
@@ -65,13 +172,8 @@ export const CardItems = () => {
     }
 
     try {
-      const response = await getCardItems({
-        filter: selectedCategory ? { category: selectedCategory } : undefined,
-        pagination: {
-          limit,
-          offset: currentOffset
-        }
-      });
+      const request = createFilterRequest(currentOffset, limit);
+      const response = await getCardItems(request);
 
       if (response.data.error) {
         setError(response.data.error);
@@ -106,14 +208,14 @@ export const CardItems = () => {
         setLoading(false);
       }
     }
-  }, [selectedCategory]);
+  }, [createFilterRequest]);
 
   // Initial load - fetch first 2 months
   useEffect(() => {
-    // Reset offset when category changes
+    // Reset offset when filters change
     setOffset(0);
     fetchCardItems(0, INITIAL_MONTHS, false);
-  }, [fetchCardItems, selectedCategory]);
+  }, [fetchCardItems, activeFilters]);
 
   // Set up intersection observer for month sections
   useEffect(() => {
@@ -199,8 +301,8 @@ export const CardItems = () => {
     setDeleteConfirmOpen(true);
   };
 
-  // Handle confirm delete
-  const handleConfirmDelete = async () => {
+  // Handle delete confirm
+  const handleDeleteConfirm = async () => {
     if (itemToDelete) {
       const result = await deleteCardItem(itemToDelete);
       
@@ -211,10 +313,12 @@ export const CardItems = () => {
       });
       
       if (result.success) {
-        // Update local state
-        const newCardItems = { ...cardItems };
-        delete newCardItems[itemToDelete];
-        setCardItems(newCardItems);
+        // Remove item from local state
+        setCardItems(prevItems => {
+          const newItems = { ...prevItems };
+          delete newItems[itemToDelete];
+          return newItems;
+        });
       }
       
       setDeleteConfirmOpen(false);
@@ -222,37 +326,237 @@ export const CardItems = () => {
     }
   };
 
-  // Handle cancel delete
-  const handleCancelDelete = () => {
+  // Handle delete cancel
+  const handleDeleteCancel = () => {
     setDeleteConfirmOpen(false);
     setItemToDelete(null);
   };
 
-  // Handle category change
-  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
-    setSelectedCategory(event.target.value);
+  // Handle snackbar close
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false
+    }));
   };
 
-  // Reset category filter
-  const handleResetFilter = () => {
-    setSelectedCategory('');
+  // Handle filter dialog open
+  const handleOpenFilterDialog = () => {
+    setOpenFilterDialog(true);
   };
 
-  // Close snackbar
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+  // Handle filter dialog close
+  const handleCloseFilterDialog = () => {
+    setOpenFilterDialog(false);
   };
 
-  // Set a ref for a month section
-  const setMonthRef = (monthKey: string, element: HTMLDivElement | null) => {
-    monthRefs.current[monthKey] = element;
+  // Handle apply filters
+  const handleApplyFilters = (newFilters: FilterOptions) => {
+    setActiveFilters(newFilters);
+  };
+
+  // Handle clear all filters
+  const handleClearAllFilters = () => {
+    setActiveFilters({
+      categories: [],
+      startDate: null,
+      endDate: null,
+      minAmount: null,
+      maxAmount: null,
+      searchTerm: '',
+      sortBy: 'date',
+      sortDirection: 'desc',
+      pendingTransactionOnly: false
+    });
+  };
+
+  // Render active filter chips
+  const renderFilterChips = () => {
+    const chips = [];
+    
+    // Category chips
+    if (activeFilters.categories && activeFilters.categories.length > 0) {
+      activeFilters.categories.forEach(category => {
+        chips.push(
+          <Chip 
+            key={`category-${category}`}
+            label={`Category: ${category}`}
+            onDelete={() => {
+              setActiveFilters({
+                ...activeFilters,
+                categories: activeFilters.categories?.filter(c => c !== category) || []
+              });
+            }}
+            color="primary"
+            variant="outlined"
+            size="small"
+          />
+        );
+      });
+    }
+    
+    // Date range chips
+    if (activeFilters.startDate) {
+      chips.push(
+        <Chip 
+          key="start-date"
+          label={`From: ${format(activeFilters.startDate, 'MMM d, yyyy')}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              startDate: null
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    if (activeFilters.endDate) {
+      chips.push(
+        <Chip 
+          key="end-date"
+          label={`To: ${format(activeFilters.endDate, 'MMM d, yyyy')}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              endDate: null
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    // Amount range chips
+    if (activeFilters.minAmount !== null) {
+      chips.push(
+        <Chip 
+          key="min-amount"
+          label={`Min: ₪${activeFilters.minAmount}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              minAmount: null
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    if (activeFilters.maxAmount !== null) {
+      chips.push(
+        <Chip 
+          key="max-amount"
+          label={`Max: ₪${activeFilters.maxAmount}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              maxAmount: null
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    // Search term chip
+    if (activeFilters.searchTerm && activeFilters.searchTerm.trim() !== '') {
+      chips.push(
+        <Chip 
+          key="search-term"
+          label={`Search: ${activeFilters.searchTerm}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              searchTerm: ''
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    // Sort chips
+    if (activeFilters.sortBy && activeFilters.sortBy !== 'date') {
+      chips.push(
+        <Chip 
+          key="sort-by"
+          label={`Sort by: ${activeFilters.sortBy}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              sortBy: 'date'
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    if (activeFilters.sortDirection && activeFilters.sortDirection !== 'desc') {
+      chips.push(
+        <Chip 
+          key="sort-direction"
+          label={`Order: ${activeFilters.sortDirection}`}
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              sortDirection: 'desc'
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    // Pending transaction chip
+    if (activeFilters.pendingTransactionOnly) {
+      chips.push(
+        <Chip 
+          key="pending-transaction"
+          label="Pending transactions only"
+          onDelete={() => {
+            setActiveFilters({
+              ...activeFilters,
+              pendingTransactionOnly: false
+            });
+          }}
+          color="primary"
+          variant="outlined"
+          size="small"
+        />
+      );
+    }
+    
+    return chips;
   };
 
   // Render loading state
   if (loading && Object.keys(cardItems).length === 0) {
     return (
       <Container maxWidth="lg">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <Box 
+          display="flex" 
+          justifyContent="center" 
+          alignItems="center" 
+          height="50vh"
+        >
           <CircularProgress />
         </Box>
       </Container>
@@ -277,85 +581,131 @@ export const CardItems = () => {
           Card Items
         </Typography>
         
-        {/* Category Filter */}
-        <Box mt={2} mb={3} display="flex" alignItems="center">
-          <FormControl sx={{ minWidth: 200, mr: 2 }}>
-            <InputLabel id="category-filter-label">Filter by Category</InputLabel>
-            <Select
-              labelId="category-filter-label"
-              id="category-filter"
-              value={selectedCategory}
-              label="Filter by Category"
-              onChange={handleCategoryChange}
+        {/* Filter Controls */}
+        <Box mt={2} mb={3}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<FilterListIcon />}
+              onClick={handleOpenFilterDialog}
+              sx={{ height: 40 }}
             >
-              <MenuItem value="">
-                <em>All Categories</em>
-              </MenuItem>
-              {categories.map((category) => (
-                <MenuItem key={category} value={category}>
-                  {category}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button variant="contained" size="small" onClick={handleResetFilter}>
-            Reset Filter
-          </Button>
+              Advanced Filters
+            </Button>
+            
+            {hasActiveFilters && (
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" sx={{ flex: 1 }}>
+                {renderFilterChips()}
+                
+                <Tooltip title="Clear all filters">
+                  <IconButton 
+                    size="small" 
+                    onClick={handleClearAllFilters}
+                    color="primary"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            )}
+          </Stack>
         </Box>
+        
+        {/* Card Items List */}
+        <CardItemsList 
+          cardItems={cardItems} 
+          onEditClick={handleEditClick} 
+          onDeleteClick={handleDeleteClick}
+          monthRefs={monthRefs}
+        />
+        
+        {/* Loading more indicator */}
+        {loadingMore && (
+          <Box display="flex" justifyContent="center" my={4}>
+            <CircularProgress size={30} />
+          </Box>
+        )}
+        
+        {/* No more items indicator */}
+        {!hasMore && Object.keys(cardItems).length > 0 && (
+          <Box textAlign="center" my={4}>
+            <Typography variant="body2" color="textSecondary">
+              No more items to load
+            </Typography>
+          </Box>
+        )}
+        
+        {/* No items found with filters */}
+        {!loading && Object.keys(cardItems).length === 0 && hasActiveFilters && (
+          <Box textAlign="center" my={4}>
+            <Typography variant="body1" color="textSecondary">
+              No items found with the current filters
+            </Typography>
+            <Button 
+              variant="text" 
+              color="primary" 
+              onClick={handleClearAllFilters}
+              sx={{ mt: 2 }}
+            >
+              Clear All Filters
+            </Button>
+          </Box>
+        )}
       </Box>
-
-      {/* Card Items List */}
-      <CardItemsList 
-        cardItems={cardItems} 
-        onEdit={handleEditClick} 
-        onDelete={handleDeleteClick}
-        setMonthRef={setMonthRef}
-      />
-
-      {/* Loading indicator */}
-      {loadingMore && (
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress size={30} />
-        </Box>
-      )}
-
+      
       {/* Edit Dialog */}
-      <CardItemEditDialog
-        open={openDialog}
-        cardItem={editItem}
-        onClose={handleCloseDialog}
-        onSave={handleSaveChanges}
-      />
-
+      {editItem && (
+        <CardItemEditDialog
+          open={openDialog}
+          onClose={handleCloseDialog}
+          cardItem={editItem}
+          onSave={handleSaveChanges}
+        />
+      )}
+      
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteConfirmOpen}
-        onClose={handleCancelDelete}
-        aria-labelledby="delete-dialog-title"
+        onClose={handleDeleteCancel}
       >
-        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
+        <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this item?</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            This action cannot be undone.
+          <Typography>
+            Are you sure you want to delete this item? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete}>Cancel</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleDeleteConfirm} color="error">
             Delete
           </Button>
         </DialogActions>
       </Dialog>
-
+      
+      {/* Advanced Filter Dialog */}
+      <AdvancedFilterDialog
+        open={openFilterDialog}
+        onClose={handleCloseFilterDialog}
+        onApplyFilters={handleApplyFilters}
+        availableCategories={categories}
+        currentFilters={activeFilters}
+      />
+      
       {/* Snackbar for notifications */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
