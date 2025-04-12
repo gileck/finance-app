@@ -1,10 +1,14 @@
-import { Paper } from '@mui/material';
+import React from 'react';
+import { Container, Box } from '@mui/material';
+import { Dashboard } from '@/client/components/dashboard/Dashboard';
 
 export const Home = () => {
   return (
-    <Paper elevation={0} sx={{ width: '100%' }}>
-    
-    </Paper>
+    <Container maxWidth="lg">
+      <Box sx={{ py: 0 }}>
+        <Dashboard />
+      </Box>
+    </Container>
   );
 };
 

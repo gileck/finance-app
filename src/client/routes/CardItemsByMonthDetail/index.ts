@@ -1,0 +1,1 @@
+export { CardItemsByMonthDetail } from './CardItemsByMonthDetail';
