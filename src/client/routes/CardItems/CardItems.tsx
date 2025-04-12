@@ -73,7 +73,7 @@ export const CardItems = () => {
   // References for infinite scrolling
   const monthRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Check if filters are active
+  // Update hasActiveFilters when activeFilters change
   useEffect(() => {
     const isActive = 
       (activeFilters.categories && activeFilters.categories.length > 0) ||
@@ -84,7 +84,7 @@ export const CardItems = () => {
       (activeFilters.searchTerm && activeFilters.searchTerm.trim() !== '') ||
       (activeFilters.sortBy && activeFilters.sortBy !== 'date') ||
       (activeFilters.sortDirection && activeFilters.sortDirection !== 'desc') ||
-      activeFilters.pendingTransactionOnly;
+      activeFilters.pendingTransactionOnly === true;
     
     setHasActiveFilters(isActive);
   }, [activeFilters]);
