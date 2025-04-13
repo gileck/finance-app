@@ -36,7 +36,8 @@ const categoryToIcon: CategoryIconMap = {
   'default': MoreHorizIcon,
   'hair': Face,
   'bike': BikeScooter,
-  'internet': Computer
+  'internet': Computer,
+  'bills': LocalAtmIcon
 };
 
 /**
@@ -45,6 +46,11 @@ const categoryToIcon: CategoryIconMap = {
  * @returns React component for the category icon
  */
 export const getCategoryIcon = (category: string): React.ReactElement => {
+  // Add null check to prevent TypeError when category is null or undefined
+  if (!category) {
+    return <MoreHorizIcon fontSize="small" />;
+  }
+  
   const lowerCaseCategory = category.toLowerCase();
   const Icon = categoryToIcon[lowerCaseCategory] || categoryToIcon['default'];
   return <Icon fontSize="small" />;
@@ -73,8 +79,14 @@ export const getCategoryColor = (category: string, theme: Theme): string => {
     'iherb': theme.palette.success.light,
     'hair': theme.palette.primary.main,
     'bike': theme.palette.primary.main,
-    'internet': theme.palette.primary.main
+    'internet': theme.palette.primary.main,
+    'bills': theme.palette.primary.main
   };
+  
+  // Add null check to prevent TypeError when category is null or undefined
+  if (!category) {
+    return theme.palette.grey[500]; // Return a default color
+  }
   
   return colorMap[category.toLowerCase()] || theme.palette.grey[500];
 };

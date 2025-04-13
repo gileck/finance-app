@@ -53,4 +53,10 @@ export const apiHandlers: ApiHandlers = {
       cardItems.getMonthlyTotalsApiName
     ) as Promise<unknown>
   },
+  [cardItems.getLastUpdateApiName]: { 
+    process: (params: unknown) => cardItems.process(
+      params, 
+      cardItems.getLastUpdateApiName
+    ) as Promise<unknown>
+  },
 };

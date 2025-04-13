@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Paper, 
   Box, 
@@ -10,37 +10,75 @@ import {
   IconButton,
   Divider,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Tooltip
+  Tooltip,
+  Link,
+  LinearProgress,
+  CircularProgress
 } from '@mui/material';
 import { 
   Edit as EditIcon, 
   Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  ErrorOutline as ErrorOutlineIcon
+  ErrorOutline as ErrorOutlineIcon,
+  Visibility as VisibilityIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { CardItem } from '@/apis/cardItems/types';
+import { ItemDetailsDialog } from '@/client/components/dashboard/ItemDetailsDialog';
+import { CategorySelectionDialog } from '@/client/components/shared/CategorySelectionDialog';
+import { updateCardItem } from '@/client/utils/cardItemOperations';
 
 interface CardItemsListProps {
   cardItems: Record<string, CardItem>;
   onEditClick: (item: CardItem) => void;
   onDeleteClick: (id: string) => void;
   monthRefs?: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
+  onItemUpdate?: (updatedItem: CardItem) => void;
 }
 
-// Helper to format date
+// Helper to format date for divider (without year)
+const formatDateForDivider = (dateString: string): string => {
+  const date = new Date(dateString);
+  
+  // Get the day name
+  const dayName = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long' // 'long' for full day name (e.g., "Monday")
+  }).format(date);
+  
+  // Get the month and day
+  const monthDay = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric'
+  }).format(date);
+  
+  // Combine day name with month and day
+  return `${dayName}, ${monthDay}`;
+};
+
+// Helper to get date key (YYYY-MM-DD) for grouping
+const getDateKey = (dateString: string): string => {
+  const date = new Date(dateString);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+// Helper to format time only
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
+  
+  // Format the month and day
+  const monthDay = new Intl.DateTimeFormat('en-US', {
     month: 'long',
     day: 'numeric'
   }).format(date);
+  
+  // Format the time in 24-hour format (HH:MM)
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const time = `${hours}:${minutes}`;
+  
+  // Combine in the format "April 13, 14:24"
+  return `${monthDay}, ${time}`;
 };
 
 // Helper to format currency
@@ -105,12 +143,31 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
   cardItems, 
   onEditClick, 
   onDeleteClick,
-  monthRefs 
+  monthRefs,
+  onItemUpdate
 }) => {
-  const groupedItems = groupByMonth(cardItems);
+  const [localCardItems, setLocalCardItems] = useState<Record<string, CardItem>>(cardItems);
+  
+  useEffect(() => {
+    setLocalCardItems(cardItems);
+  }, [cardItems]);
+  
+  const groupedItems = groupByMonth(localCardItems);
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  
+  // State for details dialog
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState<boolean>(false);
+  const [selectedItem, setSelectedItem] = useState<CardItem | null>(null);
+  
+  // State for category selection dialog
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState<boolean>(false);
+  const [itemForCategory, setItemForCategory] = useState<CardItem | null>(null);
+  
+  // State for tracking item updates in progress
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  
+  // State for tracking item deletes in progress
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   // Toggle month expansion
   const toggleMonthExpansion = (monthKey: string) => {
@@ -121,24 +178,85 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
   };
 
   // Handle delete click
-  const handleDeleteClick = (id: string) => {
-    setItemToDelete(id);
-    setDeleteDialogOpen(true);
+  const handleDeleteClick = async (id: string) => {
+    // Set deleting state to show loading indicator
+    setDeletingItemId(id);
+    
+    // Call the parent's onDeleteClick handler
+    await onDeleteClick(id);
+    
+    // Clear deleting state after a short delay to ensure the animation is visible
+    setTimeout(() => {
+      setDeletingItemId(null);
+    }, 300);
+  };
+  
+  // Handle view details click
+  const handleViewDetails = (item: CardItem) => {
+    setSelectedItem(item);
+    setDetailsDialogOpen(true);
+  };
+  
+  // Handle close details dialog
+  const handleCloseDetailsDialog = () => {
+    setDetailsDialogOpen(false);
+    setSelectedItem(null);
+  };
+  
+  // Handle edit from details dialog
+  const handleEditFromDetails = (item: CardItem) => {
+    setDetailsDialogOpen(false);
+    setSelectedItem(null);
+    onEditClick(item);
   };
 
-  // Confirm delete
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      onDeleteClick(itemToDelete);
-      setItemToDelete(null);
+  // Handle add category click
+  const handleAddCategoryClick = (item: CardItem) => {
+    setItemForCategory(item);
+    setCategoryDialogOpen(true);
+  };
+  
+  // Handle category selection
+  const handleCategorySelect = async (category: string) => {
+    if (itemForCategory) {
+      const updatedItem = { ...itemForCategory, Category: category };
+      
+      try {
+        // Set updating state to show loading indicator
+        setUpdatingItemId(itemForCategory.id);
+        setCategoryDialogOpen(false);
+        
+        // Update the item with the new category
+        const result = await updateCardItem(updatedItem);
+        
+        if (result.success) {
+          // Update local state
+          setLocalCardItems(prev => ({
+            ...prev,
+            [updatedItem.id]: updatedItem
+          }));
+          
+          // Notify parent component if callback exists
+          if (onItemUpdate) {
+            onItemUpdate(updatedItem);
+          }
+        } else {
+          console.error('Failed to update category:', result.message);
+        }
+      } catch (error) {
+        console.error('Error updating category:', error);
+      } finally {
+        // Clear updating state
+        setUpdatingItemId(null);
+        setItemForCategory(null);
+      }
     }
-    setDeleteDialogOpen(false);
   };
-
-  // Cancel delete
-  const cancelDelete = () => {
-    setItemToDelete(null);
-    setDeleteDialogOpen(false);
+  
+  // Handle close category dialog
+  const handleCloseCategoryDialog = () => {
+    setCategoryDialogOpen(false);
+    setItemForCategory(null);
   };
 
   // Get month name from key
@@ -200,101 +318,168 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
               
               {isExpanded && (
                 <List>
-                  {items.map((item, index) => (
-                    <React.Fragment key={item.id}>
-                      <ListItem>
-                        <ListItemText
-                          primary={
-                            <Box display="flex" alignItems="center">
-                              <Typography variant="body1" fontWeight="medium">
-                                {item.DisplayName || item.Name}
-                              </Typography>
-                              {item.PendingTransaction && (
-                                <Tooltip title="Pending Transaction" arrow>
-                                  <ErrorOutlineIcon 
-                                    color="warning" 
-                                    fontSize="small" 
-                                    sx={{ ml: 1 }}
-                                  />
-                                </Tooltip>
-                              )}
-                            </Box>
-                          }
-                          secondary={
-                            <Box mt={0.5}>
-                              <Typography variant="body2" color="text.secondary">
-                                {formatDate(item.Date)}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {item.Comments && `${item.Comments}`}
-                              </Typography>
+                  {items.map((item, index) => {
+                    // Group by date
+                    const dateKey = getDateKey(item.Date);
+                    const showDateDivider = index === 0 || dateKey !== getDateKey(items[index - 1].Date);
+                    
+                    return (
+                      <React.Fragment key={item.id}>
+                        {/* Date divider */}
+                        {showDateDivider && (
+                          <Box 
+                            sx={{ 
+                              py: 1, 
+                              px: 2, 
+                              backgroundColor: 'grey.100',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between'
+                            }}
+                          >
+                            <Typography variant="subtitle2" color="text.secondary">
+                              {formatDateForDivider(item.Date)}
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        <ListItem>
+                          {/* Loading indicator for category update */}
+                          {updatingItemId === item.id && (
+                            <LinearProgress 
+                              sx={{ 
+                                position: 'absolute', 
+                                top: 0, 
+                                left: 0, 
+                                right: 0,
+                                height: 2
+                              }} 
+                            />
+                          )}
+                          <ListItemText
+                            primary={
+                              <Box display="flex" alignItems="center">
+                                <Typography variant="body1" fontWeight="medium">
+                                  {item.DisplayName || item.Name}
+                                </Typography>
+                                {item.PendingTransaction && (
+                                  <Tooltip title="Pending Transaction" arrow>
+                                    <ErrorOutlineIcon 
+                                      color="warning" 
+                                      fontSize="small" 
+                                      sx={{ ml: 1 }}
+                                    />
+                                  </Tooltip>
+                                )}
+                              </Box>
+                            }
+                            secondary={
                               <Box mt={0.5}>
-                                <Chip 
-                                  label={item.Category} 
+                                <Typography variant="body2" color="text.secondary">
+                                {formatDate(item.Date)}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {item.Comments && `${item.Comments}`}
+                                </Typography>
+                                <Box mt={0.5}>
+                                  {item.Category ? (
+                                    <Chip 
+                                      label={item.Category} 
+                                      size="small"
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                  ) : (
+                                    <Link
+                                      component="button"
+                                      variant="body2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddCategoryClick(item);
+                                      }}
+                                      sx={{ 
+                                        display: 'flex', 
+                                        alignItems: 'center',
+                                        color: 'primary.main',
+                                        textDecoration: 'none',
+                                        '&:hover': {
+                                          textDecoration: 'underline'
+                                        }
+                                      }}
+                                    >
+                                      <AddIcon fontSize="small" sx={{ mr: 0.5 }} />
+                                      Add category
+                                    </Link>
+                                  )}
+                                </Box>
+                              </Box>
+                            }
+                          />
+                          <ListItemSecondaryAction>
+                            <Box display="flex" flexDirection="column" alignItems="flex-end">
+                              <Typography variant="body1" fontWeight="medium">
+                                {formatCurrency(item.Amount, item.Currency)}
+                              </Typography>
+                              <Box mt={1}>
+                                <IconButton 
+                                  edge="end" 
+                                  aria-label="view details"
+                                  onClick={() => handleViewDetails(item)}
                                   size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                />
+                                >
+                                  <VisibilityIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton 
+                                  edge="end" 
+                                  aria-label="edit"
+                                  onClick={() => onEditClick(item)}
+                                  size="small"
+                                  sx={{ ml: 1 }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton 
+                                  edge="end" 
+                                  aria-label="delete"
+                                  onClick={() => handleDeleteClick(item.id)}
+                                  size="small"
+                                  sx={{ ml: 1 }}
+                                  disabled={deletingItemId === item.id}
+                                >
+                                  {deletingItemId === item.id ? (
+                                    <CircularProgress size={18} />
+                                  ) : (
+                                    <DeleteIcon fontSize="small" />
+                                  )}
+                                </IconButton>
                               </Box>
                             </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <Box display="flex" flexDirection="column" alignItems="flex-end">
-                            <Typography variant="body1" fontWeight="medium">
-                              {formatCurrency(item.Amount, item.Currency)}
-                            </Typography>
-                            <Box mt={1}>
-                              <IconButton 
-                                edge="end" 
-                                aria-label="edit"
-                                onClick={() => onEditClick(item)}
-                                size="small"
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton 
-                                edge="end" 
-                                aria-label="delete"
-                                onClick={() => handleDeleteClick(item.id)}
-                                size="small"
-                                sx={{ ml: 1 }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </Box>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                      {index < items.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                        {index < items.length - 1 && <Divider />}
+                      </React.Fragment>
+                    );
+                  })}
                 </List>
               )}
             </Paper>
           );
         })}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={cancelDelete}
-        aria-labelledby="delete-dialog-title"
-      >
-        <DialogTitle id="delete-dialog-title">Confirm Delete</DialogTitle>
-        <DialogContent>
-          <Typography>Are you sure you want to delete this item?</Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelDelete}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Item Details Dialog */}
+      <ItemDetailsDialog
+        open={detailsDialogOpen}
+        item={selectedItem}
+        onClose={handleCloseDetailsDialog}
+        onEdit={handleEditFromDetails}
+      />
+      
+      {/* Category Selection Dialog */}
+      <CategorySelectionDialog
+        open={categoryDialogOpen}
+        onClose={handleCloseCategoryDialog}
+        onSelectCategory={handleCategorySelect}
+      />
     </>
   );
 };

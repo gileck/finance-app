@@ -13,7 +13,8 @@ import {
   MenuItem,
   CircularProgress,
   FormControlLabel,
-  Switch
+  Switch,
+  Typography
 } from '@mui/material';
 import { CardItem } from '@/apis/cardItems/types';
 
@@ -133,18 +134,50 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
             />
           </Box>
           <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-            <TextField
-              label="Date"
-              type="date"
-              fullWidth
-              value={new Date(editedItem.Date).toISOString().split('T')[0]}
-              onChange={(e) => handleFieldChange('Date', e.target.value)}
-              margin="normal"
-              InputLabelProps={{
-                shrink: true,
-              }}
-              disabled={loading}
-            />
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, mt: 2 }}>
+              Date and Time
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <TextField
+                label="Date"
+                type="date"
+                fullWidth
+                value={new Date(editedItem.Date).toISOString().split('T')[0]}
+                onChange={(e) => {
+                  // Preserve the time part when changing the date
+                  const currentDate = new Date(editedItem.Date);
+                  const newDate = new Date(e.target.value);
+                  newDate.setHours(currentDate.getHours(), currentDate.getMinutes(), 0, 0);
+                  handleFieldChange('Date', newDate.toISOString());
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                disabled={loading}
+                size="small"
+              />
+              <TextField
+                label="Time"
+                type="time"
+                fullWidth
+                value={`${new Date(editedItem.Date).getHours().toString().padStart(2, '0')}:${new Date(editedItem.Date).getMinutes().toString().padStart(2, '0')}`}
+                onChange={(e) => {
+                  // Preserve the date part when changing the time
+                  const currentDate = new Date(editedItem.Date);
+                  const [hours, minutes] = e.target.value.split(':').map(Number);
+                  currentDate.setHours(hours, minutes, 0, 0);
+                  handleFieldChange('Date', currentDate.toISOString());
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                inputProps={{
+                  step: 60, // 1 minute steps
+                }}
+                disabled={loading}
+                size="small"
+              />
+            </Box>
           </Box>
           <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
             <FormControl fullWidth margin="normal" disabled={loading}>

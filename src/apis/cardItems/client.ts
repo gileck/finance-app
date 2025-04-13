@@ -8,7 +8,8 @@ import {
   DeleteCardItemRequest,
   DeleteCardItemResponse,
   GetMonthlyTotalsRequest,
-  GetMonthlyTotalsResponse
+  GetMonthlyTotalsResponse,
+  GetLastUpdateResponse
 } from "./types";
 import type { CacheResult } from "@/server/cache/types";
 import apiClient from "@/client/utils/apiClient";
@@ -17,7 +18,8 @@ import {
   getByIdApiName,
   updateApiName,
   deleteApiName,
-  getMonthlyTotalsApiName
+  getMonthlyTotalsApiName,
+  getLastUpdateApiName
 } from "./server";
 
 // Client function to get all card items
@@ -76,5 +78,14 @@ export const deleteCardItem = async (
     deleteApiName,
     request,
     { disableCache: true } // Disable cache for mutations
+  );
+};
+
+// Client function to get the last update timestamp
+export const getLastUpdate = async (): Promise<CacheResult<GetLastUpdateResponse>> => {
+  return apiClient.call<CacheResult<GetLastUpdateResponse>, Record<string, never>>(
+    getLastUpdateApiName,
+    {},
+    { disableCache: true } // Disable cache to always get the latest update time
   );
 };

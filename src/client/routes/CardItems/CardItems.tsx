@@ -42,6 +42,7 @@ export const CardItems = () => {
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState<boolean>(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [offset, setOffset] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [categories, setCategories] = useState<string[]>([]);
@@ -226,20 +227,22 @@ export const CardItems = () => {
 
     const options = {
       root: null,
-      rootMargin: '0px',
+      rootMargin: '200px', // Increase root margin to load earlier
       threshold: 0.1 // Trigger when just 10% of the month section is visible
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && hasMore && !loadingMore && !loading) {
-          // When the last month section is entering the viewport, load the next month
-          const newOffset = offset + INITIAL_MONTHS;
-          setOffset(newOffset);
-          fetchCardItems(newOffset, MONTHS_PER_SCROLL, true);
-        }
-      });
-    }, options);
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      const isIntersecting = entries.some(entry => entry.isIntersecting);
+      
+      if (isIntersecting && hasMore && !loadingMore && !loading) {
+        // When the last month section is entering the viewport, load the next month
+        const newOffset = offset + INITIAL_MONTHS;
+        setOffset(newOffset);
+        fetchCardItems(newOffset, MONTHS_PER_SCROLL, true);
+      }
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, options);
 
     // Get all current month refs
     const currentMonthRefs = Object.values(monthRefs.current).filter(Boolean);
@@ -253,12 +256,7 @@ export const CardItems = () => {
     }
 
     return () => {
-      // Clean up observers
-      currentMonthRefs.forEach(ref => {
-        if (ref) {
-          observer.unobserve(ref);
-        }
-      });
+      observer.disconnect(); // Properly disconnect the observer
     };
   }, [cardItems, hasMore, loadingMore, loading, offset, fetchCardItems]);
 
@@ -301,28 +299,48 @@ export const CardItems = () => {
     setDeleteConfirmOpen(true);
   };
 
-  // Handle delete confirm
+  // Handle item update (for category changes, etc.)
+  const handleItemUpdate = (updatedItem: CardItem) => {
+    // Update the local state to reflect the change without a page reload
+    setCardItems(prev => ({
+      ...prev,
+      [updatedItem.id]: updatedItem
+    }));
+  };
+
+  // Confirm delete
   const handleDeleteConfirm = async () => {
     if (itemToDelete) {
-      const result = await deleteCardItem(itemToDelete);
+      setIsDeleting(true);
       
-      setSnackbar({
-        open: true,
-        message: result.message,
-        severity: result.severity
-      });
-      
-      if (result.success) {
-        // Remove item from local state
-        setCardItems(prevItems => {
-          const newItems = { ...prevItems };
-          delete newItems[itemToDelete];
-          return newItems;
+      try {
+        const result = await deleteCardItem(itemToDelete);
+        
+        setSnackbar({
+          open: true,
+          message: result.message,
+          severity: result.severity
         });
+        
+        if (result.success) {
+          // Remove item from local state
+          setCardItems(prevItems => {
+            const newItems = { ...prevItems };
+            delete newItems[itemToDelete];
+            return newItems;
+          });
+        }
+      } catch (error) {
+        setSnackbar({
+          open: true,
+          message: `Error deleting item: ${error instanceof Error ? error.message : String(error)}`,
+          severity: 'error'
+        });
+      } finally {
+        setIsDeleting(false);
+        setDeleteConfirmOpen(false);
+        setItemToDelete(null);
       }
-      
-      setDeleteConfirmOpen(false);
-      setItemToDelete(null);
     }
   };
 
@@ -617,6 +635,7 @@ export const CardItems = () => {
           cardItems={cardItems} 
           onEditClick={handleEditClick} 
           onDeleteClick={handleDeleteClick}
+          onItemUpdate={handleItemUpdate}
           monthRefs={monthRefs}
         />
         
@@ -676,11 +695,20 @@ export const CardItems = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
+          <Button 
+            onClick={handleDeleteCancel} 
+            color="primary"
+            disabled={isDeleting}
+          >
             Cancel
           </Button>
-          <Button onClick={handleDeleteConfirm} color="error">
-            Delete
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error"
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

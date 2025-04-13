@@ -1,7 +1,8 @@
-import { AppBar, Toolbar, IconButton, Typography, Box, Button } from '@mui/material';
+  import { AppBar, Toolbar, IconButton, Typography, Box, Button } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter } from '../../router';
 import { NavItem } from '../../components/layout/types';
+import { LastUpdateIndicator } from './LastUpdateIndicator';
 
 interface TopNavBarProps {
   navItems: NavItem[];
@@ -28,24 +29,28 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
         })
       }}
     >
-      <Toolbar>
-        <IconButton
-          color="inherit"
-          aria-label="open drawer"
-          edge="start"
-          onClick={onDrawerToggle}
-          sx={{ mr: 2, display: { sm: 'none' } }}
-        >
-          <MenuIcon />
-        </IconButton>
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}
-        >
-          SPA Router
-        </Typography>
-        <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={onDrawerToggle}
+            sx={{ mr: 2, display: { sm: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ display: { xs: 'none', sm: 'block' } }}
+          >
+            SPA Router
+          </Typography>
+        </Box>
+
+        {/* Center section with navigation on desktop */}
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, flexGrow: 0 }}>
           {navItems.map((item) => (
             <Button 
               key={item.path} 
@@ -63,6 +68,11 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
               {item.label}
             </Button>
           ))}
+        </Box>
+        
+        {/* Last update indicator - always on the right side */}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <LastUpdateIndicator />
         </Box>
       </Toolbar>
     </AppBar>

@@ -7,6 +7,7 @@ import { TopSpendingsList } from './TopSpendingsList';
 import { TopCategoriesList } from './TopCategoriesList';
 import { RecentExpenses } from './RecentExpenses';
 import { CategoryPieChart } from './CategoryPieChart';
+import { RecurringTransactions } from './RecurringTransactions';
 
 export const Dashboard: React.FC = () => {
   const [cardItems, setCardItems] = useState<CardItem[]>([]);
@@ -145,8 +146,16 @@ export const Dashboard: React.FC = () => {
             limit={5}
           />
         </Box>
-        
-        {/* Top Expenses */}
+      </Box>
+      
+      {/* Second row */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        justifyContent: 'space-between',
+        mb: 3
+      }}>
+        {/* Top Spendings List */}
         <Box sx={{ 
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
@@ -169,10 +178,26 @@ export const Dashboard: React.FC = () => {
             limit={5}
           />
         </Box>
+      </Box>
+      
+      {/* Third row */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        justifyContent: 'space-between',
+        mb: 3
+      }}>
+        {/* Recurring Transactions */}
+        <Box sx={{ 
+          width: { xs: '100%', md: 'calc(50% - 12px)' },
+          mb: { xs: 3, md: 0 }
+        }}>
+          <RecurringTransactions limit={10} />
+        </Box>
         
         {/* Category Pie Chart */}
         <Box sx={{ 
-          width: { xs: '100%', md: 'calc(100% - 0px)' },
+          width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
           <CategoryPieChart 

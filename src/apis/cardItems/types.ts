@@ -4,12 +4,24 @@ export interface CardItem {
   Name: string;
   Amount: number;
   Category: string;
-  Comments?: string;
+  Comments?: Array<string>;
   Currency: string;
   Card: boolean;
   DisplayName?: string;
   RawAmount?: number;
   PendingTransaction?: boolean;
+  ChargeDate?: string;
+  TransactionType?: string;
+  CardType?: string;
+  CardId?: string;
+  IsRecurringTransaction?: boolean;
+  IsCashWithdrawal?: boolean;
+  IsCardPresent?: boolean;
+  IsAbroadTransaction?: boolean;
+  Details?: {
+    Address?: string;
+    Phone?: string;
+  };
 }
 
 export interface MonthlyTotal {
@@ -86,5 +98,15 @@ export interface DeleteCardItemRequest {
 
 export interface DeleteCardItemResponse {
   success: boolean;
+  error?: string;
+}
+
+export interface GetLastUpdateRequest {
+  // Using Record<never, never> for an empty object type
+  readonly _tag?: 'GetLastUpdateRequest';
+}
+
+export interface GetLastUpdateResponse {
+  lastUpdate?: string;
   error?: string;
 }

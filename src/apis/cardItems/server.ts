@@ -11,7 +11,8 @@ import {
   DeleteCardItemResponse,
   GetMonthlyTotalsRequest,
   GetMonthlyTotalsResponse,
-  MonthlyTotal
+  MonthlyTotal,
+  GetLastUpdateResponse
 } from "./types";
 import { name } from './index';
 
@@ -23,7 +24,8 @@ export const getAllApiName = `${name}/getAll`;
 export const getByIdApiName = `${name}/getById`;
 export const updateApiName = `${name}/update`;
 export const deleteApiName = `${name}/delete`;
-  export const getMonthlyTotalsApiName = `${name}/getMonthlyTotals`;
+export const getMonthlyTotalsApiName = `${name}/getMonthlyTotals`;
+export const getLastUpdateApiName = `${name}/getLastUpdate`;
 
 // DB file name in S3
 const DB_FILE_NAME = "db.json";
@@ -363,14 +365,34 @@ export const getMonthlyTotals = async (
   }
 };
 
+// Get last update timestamp
+export const getLastUpdate = async (
+): Promise<GetLastUpdateResponse> => {
+  try {
+    const dbContent = await getFileAsString(DB_FILE_NAME);
+    const db = JSON.parse(dbContent);
+    
+    return {
+      lastUpdate: db.lastUpdate || null
+    };
+  } catch (error) {
+    console.error("Error fetching last update time:", error);
+    return {
+      error: `Failed to fetch last update time: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+};
+
 // Process function that routes to the appropriate handler based on the API name
 export const process = async (
   params: unknown,
   apiName?: string
 ): Promise<unknown> => {
-  const fullApiName = apiName || name;
-  
-  switch (fullApiName) {
+  if (!apiName) {
+    throw new Error("API name is required");
+  }
+
+  switch (apiName) {
     case getAllApiName:
       return getAllCardItems(params as GetCardItemsRequest);
     case getByIdApiName:
@@ -381,8 +403,9 @@ export const process = async (
       return deleteCardItem(params as DeleteCardItemRequest);
     case getMonthlyTotalsApiName:
       return getMonthlyTotals(params as GetMonthlyTotalsRequest);
+    case getLastUpdateApiName:
+      return getLastUpdate();
     default:
-      // Default to getting all card items
-      return getAllCardItems(params as GetCardItemsRequest);
+      throw new Error(`Unknown API name: ${apiName}`);
   }
 };
