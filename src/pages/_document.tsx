@@ -4,11 +4,11 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        <meta name="application-name" content="App Template AI" />
+        <meta name="application-name" content="Finance App" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="App Template" />
-        <meta name="description" content="A custom SPA application with PWA capabilities" />
+        <meta name="apple-mobile-web-app-title" content="Finance App" />
+        <meta name="description" content="Finance App" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#000000" />
