@@ -136,13 +136,23 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
   // Format date for display in the history dialog
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    
+    // For mobile-friendly display, show only month and day
+    const monthDay = new Intl.DateTimeFormat('en-US', {
+      month: 'numeric',
+      day: 'numeric'
     }).format(date);
+    
+    
+    
+    // For current year, show only month and day
+    // For other years, include the year
+    const currentYear = new Date().getFullYear();
+    if (date.getFullYear() === currentYear) {
+      return `${monthDay}`;
+    } else {
+      return `${monthDay} ${date.getFullYear()}`;
+    }
   };
   
   // Render loading state
@@ -189,9 +199,8 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
               <React.Fragment key={item.id}>
                 <ListItem 
                   alignItems="flex-start" 
-                  button 
-                  onClick={() => handleItemClick(item)}
                   sx={{ cursor: 'pointer' }}
+                  onClick={() => handleItemClick(item)}
                 >
                   <ListItemAvatar>
                     <Avatar
@@ -254,7 +263,11 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
             Showing {historyItems.length} occurrences
           </Typography>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent 
+        sx={{
+          p:0
+        }}
+        dividers>
           {historyItems.length === 0 ? (
             <Box p={2} textAlign="center">
               <Typography color="textSecondary">No history found</Typography>
@@ -265,7 +278,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
                 <TableHead>
                   <TableRow>
                     <TableCell>Date</TableCell>
-                    <TableCell>Amount</TableCell>
+                    <TableCell align="right">Amount</TableCell>
                     <TableCell>Category</TableCell>
                     {historyItems[0].CardId && <TableCell>Card</TableCell>}
                     {historyItems.some(item => item.Comments && item.Comments.length > 0) && (
@@ -280,7 +293,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
                     return (
                       <TableRow key={item.id}>
                         <TableCell>{formatDate(item.Date)}</TableCell>
-                        <TableCell>{formatCurrency(item.Amount, item.Currency)}</TableCell>
+                        <TableCell align="right">{formatCurrency(item.Amount, item.Currency)}</TableCell>
                         <TableCell>
                           <Chip
                             label={item.Category}

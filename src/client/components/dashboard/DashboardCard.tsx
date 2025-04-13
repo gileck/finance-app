@@ -29,6 +29,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({
     <Paper 
       elevation={3} 
       sx={{ 
+        p:0,
         height,
         display: 'flex',
         flexDirection: 'column',
