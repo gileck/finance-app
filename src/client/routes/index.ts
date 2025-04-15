@@ -7,6 +7,7 @@ import { AIMonitoring } from './AIMonitoring';
 import { CardItems } from './CardItems';
 import { CardItemsByMonth } from './CardItemsByMonth';
 import { CardItemsByMonthDetail } from './CardItemsByMonthDetail';
+import { BankPage } from './bank';
 import { createRoutes } from '../router';
 
 // Define routes
@@ -19,5 +20,6 @@ export const routes = createRoutes({
   '/card-items': CardItems,
   '/card-items-by-month': CardItemsByMonth,
   '/card-items-by-month-detail/:year/:month': CardItemsByMonthDetail,
+  '/bank-items': BankPage,
   '/not-found': NotFound,
 });

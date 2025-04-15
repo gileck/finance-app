@@ -4,6 +4,7 @@ import * as clearCache from "./settings/clearCache/server";
 import * as fileManagement from "./fileManagement/server";
 import * as aiUsage from "./monitoring/aiUsage/server";
 import * as cardItems from "./cardItems/server";
+import * as bankItems from "./bankItems/server";
 import { GetAllAIUsageRequest, GetAIUsageSummaryRequest } from "./monitoring/aiUsage/types";
 
 
@@ -57,6 +58,36 @@ export const apiHandlers: ApiHandlers = {
     process: (params: unknown) => cardItems.process(
       params, 
       cardItems.getLastUpdateApiName
+    ) as Promise<unknown>
+  },
+  [bankItems.getAllApiName]: {
+    process: (params: unknown) => bankItems.process(
+      params,
+      bankItems.getAllApiName
+    ) as Promise<unknown>
+  },
+  [bankItems.getByIdApiName]: {
+    process: (params: unknown) => bankItems.process(
+      params,
+      bankItems.getByIdApiName
+    ) as Promise<unknown>
+  },
+  [bankItems.updateApiName]: {
+    process: (params: unknown) => bankItems.process(
+      params,
+      bankItems.updateApiName
+    ) as Promise<unknown>
+  },
+  [bankItems.deleteApiName]: {
+    process: (params: unknown) => bankItems.process(
+      params,
+      bankItems.deleteApiName
+    ) as Promise<unknown>
+  },
+  [bankItems.getMonthlyTotalsApiName]: {
+    process: (params: unknown) => bankItems.process(
+      params,
+      bankItems.getMonthlyTotalsApiName
     ) as Promise<unknown>
   },
 };
