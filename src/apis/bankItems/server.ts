@@ -29,9 +29,12 @@ const getBankItemsFromS3 = async (): Promise<Record<string, BankItem>> => {
     const dbContent = await getFileAsString(DB_FILE_NAME);
     const db = JSON.parse(dbContent);
     // Only items with Bank: true
-    return Object.fromEntries(
-      Object.entries(db.bankItems || db.cardItems || {}).filter(([, item]) => item.Bank)
-    );
+    const entries = Object.entries(db.bankItems || db.cardItems || {});
+    const bankEntries = entries.filter(entry => {
+      const item = entry[1] as { Bank?: boolean };
+      return item.Bank === true;
+    });
+    return Object.fromEntries(bankEntries) as Record<string, BankItem>;
   } catch (error) {
     throw new Error(`Failed to fetch bank items: ${error instanceof Error ? error.message : String(error)}`);
   }

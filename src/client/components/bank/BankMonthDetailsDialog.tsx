@@ -1,19 +1,28 @@
 import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Divider } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Divider, IconButton } from '@mui/material';
 import { BankItem } from '@/apis/bankItems/types';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface BankMonthDetailsDialogProps {
   open: boolean;
   item: BankItem | null;
   onClose: () => void;
+  onEdit: (item: BankItem) => void;
 }
 
-export const BankMonthDetailsDialog: React.FC<BankMonthDetailsDialogProps> = ({ open, item, onClose }) => {
+export const BankMonthDetailsDialog: React.FC<BankMonthDetailsDialogProps> = ({ open, item, onClose, onEdit }) => {
   if (!item) return null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Bank Transaction Details</DialogTitle>
+      <DialogTitle>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6">Bank Transaction Details</Typography>
+          <IconButton onClick={() => onEdit(item)} color="primary" size="small">
+            <EditIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
       <DialogContent>
         <Box mb={2}>
           <Typography variant="subtitle2" color="text.secondary">Date</Typography>

@@ -1,21 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, List, ListItem, ListItemText, CircularProgress, Divider, useTheme, Chip, Collapse, IconButton } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { MonthlyBankTotal, BankItem } from '@/apis/bankItems/types';
 import { BankMonthDetailsDialog } from './BankMonthDetailsDialog';
+import { BankItemEditDialog } from './BankItemEditDialog';
+import { updateBankItem } from '@/client/utils/bankItemOperations';
 
 interface BankMonthsListProps {
   months: MonthlyBankTotal[];
   items: Record<string, BankItem>;
   loading: boolean;
+  onItemUpdated?: (item: BankItem) => void;
 }
 
-export const BankMonthsList: React.FC<BankMonthsListProps> = ({ months, items, loading }) => {
+export const BankMonthsList: React.FC<BankMonthsListProps> = ({ 
+  months, 
+  items, 
+  loading,
+  onItemUpdated 
+}) => {
   const theme = useTheme();
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<BankItem | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [localItems, setLocalItems] = useState<Record<string, BankItem>>(items);
+
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
 
   const handleExpand = (monthKey: string) => {
     setExpandedMonth(expandedMonth === monthKey ? null : monthKey);
@@ -29,6 +43,38 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({ months, items, l
   const handleDialogClose = () => {
     setDetailsDialogOpen(false);
     setSelectedItem(null);
+  };
+
+  const handleEditClick = (item: BankItem) => {
+    setSelectedItem(item);
+    setDetailsDialogOpen(false);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditDialogClose = () => {
+    setEditDialogOpen(false);
+  };
+
+  const handleSaveItem = async (updatedItem: BankItem) => {
+    try {
+      const result = await updateBankItem(updatedItem);
+      
+      if (result.success && result.updatedItem) {
+        const updatedItems = {
+          ...localItems,
+          [updatedItem.id]: result.updatedItem
+        };
+        setLocalItems(updatedItems);
+        
+        if (onItemUpdated) {
+          onItemUpdated(result.updatedItem);
+        }
+      }
+      
+      setEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving bank item:', error);
+    }
   };
 
   if (loading) {
@@ -48,13 +94,19 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({ months, items, l
       <List>
         {months.map((month) => {
           const monthKey = `${month.year}-${month.month}`;
-          const monthItems = Object.values(items).filter(item => {
+          const monthItems = Object.values(localItems).filter(item => {
             const date = new Date(item.Date);
-            return date.getFullYear() === month.year && (date.getMonth() + 1).toString() === month.month;
+            return date.getFullYear() === month.year && (date.getMonth() + 1) === Number(month.month);
           });
           return (
             <React.Fragment key={monthKey}>
-              <ListItem button onClick={() => handleExpand(monthKey)} sx={{ bgcolor: expandedMonth === monthKey ? theme.palette.action.selected : undefined }}>
+              <ListItem 
+                onClick={() => handleExpand(monthKey)} 
+                sx={{ 
+                  bgcolor: expandedMonth === monthKey ? theme.palette.action.selected : undefined,
+                  cursor: 'pointer'
+                }}
+              >
                 <ListItemText
                   primary={
                     <Box display="flex" alignItems="center">
@@ -74,7 +126,11 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({ months, items, l
                   ) : (
                     <List dense>
                       {monthItems.map(item => (
-                        <ListItem key={item.id} button onClick={() => handleItemClick(item)}>
+                        <ListItem 
+                          key={item.id} 
+                          onClick={() => handleItemClick(item)}
+                          sx={{ cursor: 'pointer' }}
+                        >
                           <ListItemText
                             primary={<Typography fontWeight={500}>{item.Description}</Typography>}
                             secondary={<>
@@ -96,7 +152,18 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({ months, items, l
           );
         })}
       </List>
-      <BankMonthDetailsDialog open={detailsDialogOpen} item={selectedItem} onClose={handleDialogClose} />
+      <BankMonthDetailsDialog 
+        open={detailsDialogOpen} 
+        item={selectedItem} 
+        onClose={handleDialogClose}
+        onEdit={handleEditClick}
+      />
+      <BankItemEditDialog
+        open={editDialogOpen}
+        bankItem={selectedItem}
+        onClose={handleEditDialogClose}
+        onSave={handleSaveItem}
+      />
     </Box>
   );
 };
