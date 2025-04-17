@@ -18,9 +18,6 @@ export const DrawerMenu = ({ navItems, mobileOpen, onDrawerToggle }: DrawerMenuP
 
   const drawerContent = (
     <Box onClick={onDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
-        SPA Router
-      </Typography>
       <List>
         {navItems.map((item) => (
           <ListItem key={item.path} disablePadding>

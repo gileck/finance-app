@@ -40,13 +40,7 @@ export const TopNavBar = ({ navItems, isStandalone, onDrawerToggle }: TopNavBarP
           >
             <MenuIcon />
           </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ display: { xs: 'none', sm: 'block' } }}
-          >
-            SPA Router
-          </Typography>
+        
         </Box>
 
         {/* Center section with navigation on desktop */}

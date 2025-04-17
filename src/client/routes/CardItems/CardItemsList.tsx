@@ -388,6 +388,11 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                                       size="small"
                                       color="primary"
                                       variant="outlined"
+                                      onDoubleClick={(e) => {
+                                        e.stopPropagation();
+                                        handleAddCategoryClick(item);
+                                      }}
+                                      sx={{ cursor: 'pointer' }}
                                     />
                                   ) : (
                                     <Link

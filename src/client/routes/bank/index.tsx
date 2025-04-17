@@ -85,7 +85,7 @@ export const BankPage: React.FC = () => {
   return (
     <Box sx={{ p: { xs: 1, md: 3 }, width: '100%', maxWidth: 900, mx: 'auto' }}>
       <Typography variant="h4" fontWeight={700} mb={2}>
-        Bank Transactions (Raw Data)
+        Bank Transactions
       </Typography>
       <Divider sx={{ mb: 2 }} />
       

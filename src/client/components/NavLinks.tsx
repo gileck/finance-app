@@ -6,13 +6,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import InsightsIcon from '@mui/icons-material/Insights';
 import CreditCardIcon from '@mui/icons-material/CreditCard';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import { SimCardAlertTwoTone } from '@mui/icons-material';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 
 export const navItems: NavItem[] = [ 
   { path: '/', label: 'Home', icon: <HomeIcon /> },
-  { path: '/card-items', label: 'Card Items', icon: <CreditCardIcon /> },
-  { path: '/card-items-by-month', label: 'Monthly Totals', icon: <CalendarMonthIcon /> },
-  { path: '/bank-items', label: 'Bank Items', icon: <SimCardAlertTwoTone /> },
+  { path: '/card-items', label: 'Card', icon: <CreditCardIcon /> },
+  { path: '/card-items-by-month', label: 'Card Totals', icon: <CalendarMonthIcon /> },
+  { path: '/bank-items', label: 'Bank', icon: <AccountBalanceIcon /> },
 ];
   
   export const menuItems: NavItem[] = [ 

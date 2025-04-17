@@ -10,7 +10,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 import LocalAirportIcon from '@mui/icons-material/LocalAirport';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { BikeScooter, Computer, EnergySavingsLeaf, Face } from '@mui/icons-material';
+import { BikeScooter, Computer, EnergySavingsLeaf, Face, Paid } from '@mui/icons-material';
 import { SvgIconProps } from '@mui/material';
 
 // Define a type for our icon components
@@ -37,7 +37,8 @@ const categoryToIcon: CategoryIconMap = {
   'hair': Face,
   'bike': BikeScooter,
   'internet': Computer,
-  'bills': LocalAtmIcon
+  'bills': LocalAtmIcon,
+  'money transfer': Paid
 };
 
 /**
@@ -57,38 +58,59 @@ export const getCategoryIcon = (category: string): React.ReactElement => {
 };
 
 /**
- * Returns the appropriate color for a given category based on the theme
+ * Returns the appropriate color for a given category
  * @param category The category name
- * @param theme Material-UI theme object
- * @returns Color string from the theme
+ * @param _theme Material-UI theme object (unused but kept for backward compatibility)
+ * @returns Color string
  */
-export const getCategoryColor = (category: string, theme: Theme): string => {
+export const getCategoryColor = (category: string, _theme?: Theme): string => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { _theme: _unused } = { _theme }; // Properly handle unused parameter
+  
+  // Rich color palette with a variety of distinct colors
   const colorMap: Record<string, string> = {
-    'groceries': theme.palette.success.main,
-    'restaurants': theme.palette.warning.main,
-    'food': theme.palette.warning.main,
-    'shopping': theme.palette.secondary.main,
-    'online shopping': theme.palette.secondary.main,
-    'home': theme.palette.info.main,
-    'transportation': theme.palette.secondary.main,
-    'car': theme.palette.error.main,
-    'health': theme.palette.primary.light,
-    'atm': theme.palette.primary.main,
-    'travel': theme.palette.info.dark,
-    'gifts': theme.palette.secondary.light,
-    'iherb': theme.palette.success.light,
-    'hair': theme.palette.primary.main,
-    'bike': theme.palette.primary.main,
-    'internet': theme.palette.primary.main,
-    'bills': theme.palette.primary.main
+    'groceries': '#2E7D32', // Dark green
+    'restaurants': '#FF6D00', // Orange
+    'food': '#E65100', // Dark orange
+    'shopping': '#6A1B9A', // Purple
+    'online shopping': '#4A148C', // Dark purple
+    'home': '#0277BD', // Blue
+    'transportation': '#00695C', // Teal
+    'car': '#D32F2F', // Red
+    'health': '#C2185B', // Pink
+    'atm': '#1565C0', // Blue
+    'travel': '#283593', // Indigo
+    'gifts': '#8E24AA', // Light purple
+    'iherb': '#558B2F', // Light green
+    'hair': '#D81B60', // Pink
+    'bike': '#00838F', // Cyan
+    'internet': '#1E88E5', // Light blue
+    'bills': '#F9A825', // Amber
+    'money transfer': '#5D4037', // Brown
+    'entertainment': '#7B1FA2', // Purple
+    'education': '#0097A7', // Cyan
+    'fitness': '#43A047', // Green
+    'clothing': '#AD1457', // Dark pink
+    'electronics': '#3949AB', // Indigo
+    'subscriptions': '#F4511E', // Deep orange
+    'charity': '#689F38', // Light green
+    'pets': '#6D4C41', // Brown
+    'insurance': '#757575', // Grey
+    'taxes': '#546E7A', // Blue grey
+    'investments': '#00ACC1', // Cyan
+    'utilities': '#FB8C00', // Orange
+    'rent': '#C0CA33', // Lime
+    'mortgage': '#AFB42B', // Lime
+    'childcare': '#26A69A', // Teal
+    'furniture': '#8D6E63', // Brown
   };
   
   // Add null check to prevent TypeError when category is null or undefined
   if (!category) {
-    return theme.palette.grey[500]; // Return a default color
+    return '#9E9E9E'; // Default grey color
   }
   
-  return colorMap[category.toLowerCase()] || theme.palette.grey[500];
+  return colorMap[category.toLowerCase()] || '#9E9E9E'; // Default grey color
 };
 
 /**

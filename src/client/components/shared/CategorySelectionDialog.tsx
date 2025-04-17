@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,7 +11,11 @@ import {
   ListItemIcon,
   Divider,
   useTheme,
-  alpha
+  alpha,
+  TextField,
+  Autocomplete,
+  Box,
+  Typography
 } from '@mui/material';
 import { getCategoryIcon } from '@/client/utils/categoryUtils';
 
@@ -53,11 +57,29 @@ export const CategorySelectionDialog: React.FC<CategorySelectionDialogProps> = (
   onSelectCategory
 }) => {
   const theme = useTheme();
+  const [searchValue, setSearchValue] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  const handleCategoryClick = (category: string) => {
-    onSelectCategory(category);
-    onClose();
+  const handleCategorySelect = (category: string | null) => {
+    if (category) {
+      setSelectedCategory(category);
+    }
   };
+  
+  const handleSubmit = () => {
+    if (selectedCategory) {
+      onSelectCategory(selectedCategory);
+      onClose();
+    }
+  };
+  
+  // Reset state when dialog opens or closes
+  React.useEffect(() => {
+    if (!open) {
+      setSearchValue('');
+      setSelectedCategory(null);
+    }
+  }, [open]);
   
   return (
     <Dialog 
@@ -67,32 +89,80 @@ export const CategorySelectionDialog: React.FC<CategorySelectionDialogProps> = (
       fullWidth
     >
       <DialogTitle>Select Category</DialogTitle>
-      <DialogContent dividers sx={{ p: 0 }}>
-        <List disablePadding>
-          {CATEGORIES.map((category, index) => (
-            <React.Fragment key={category}>
-              <ListItem 
-                onClick={() => handleCategoryClick(category)}
-                sx={{
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  },
-                  cursor: 'pointer'
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40 }}>
-                  {getCategoryIcon(category)}
-                </ListItemIcon>
-                <ListItemText primary={category} />
-              </ListItem>
-              {index < CATEGORIES.length - 1 && <Divider />}
-            </React.Fragment>
-          ))}
-        </List>
+      <DialogContent dividers sx={{ p: 2 }}>
+        <Autocomplete
+          value={selectedCategory}
+          onChange={(_, newValue) => handleCategorySelect(newValue)}
+          inputValue={searchValue}
+          onInputChange={(_, newInputValue) => setSearchValue(newInputValue)}
+          options={CATEGORIES}
+          renderInput={(params) => (
+            <TextField 
+              {...params} 
+              label="Search categories" 
+              variant="outlined" 
+              fullWidth
+              autoFocus
+            />
+          )}
+          renderOption={(props, option) => (
+            <ListItem {...props} key={option}>
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                {getCategoryIcon(option)}
+              </ListItemIcon>
+              <ListItemText primary={option} />
+            </ListItem>
+          )}
+          fullWidth
+          disablePortal
+          autoHighlight
+          blurOnSelect
+        />
+        
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
+          All Categories
+        </Typography>
+        
+        <Box sx={{ maxHeight: '300px', overflow: 'auto', mt: 1 }}>
+          <List disablePadding>
+            {CATEGORIES.map((category, index) => (
+              <React.Fragment key={category}>
+                <ListItem 
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    handleCategorySelect(category);
+                  }}
+                  sx={{
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                    },
+                    cursor: 'pointer',
+                    backgroundColor: selectedCategory === category ? 
+                      alpha(theme.palette.primary.main, 0.1) : 'transparent'
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 40 }}>
+                    {getCategoryIcon(category)}
+                  </ListItemIcon>
+                  <ListItemText primary={category} />
+                </ListItem>
+                {index < CATEGORIES.length - 1 && <Divider />}
+              </React.Fragment>
+            ))}
+          </List>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
+        <Button 
+          onClick={handleSubmit} 
+          variant="contained" 
+          color="primary"
+          disabled={!selectedCategory}
+        >
+          Select
+        </Button>
       </DialogActions>
     </Dialog>
   );
