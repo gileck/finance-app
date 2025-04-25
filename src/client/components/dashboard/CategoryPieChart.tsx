@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -19,6 +19,7 @@ import { CardItem } from '@/apis/cardItems/types';
 import { DashboardCard } from './DashboardCard';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
+import { CategoryItemsDialog } from './CategoryItemsDialog';
 
 interface CategoryPieChartProps {
   items: CardItem[];
@@ -79,7 +80,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
 };
 
 // Custom legend that shows top categories only
-const CustomLegend = ({ payload }: LegendProps) => {
+const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryClick: (category: string) => void }) => {
   const theme = useTheme();
   
   return (
@@ -102,20 +103,22 @@ const CustomLegend = ({ payload }: LegendProps) => {
         borderRadius: '4px',
       },
     }}>
-      {payload.map((entry) => (
+      {payload.map((entry, index) => (
         <Box 
-          key={`legend-${entry.value}`} 
-          display="flex" 
-          alignItems="center"
-          sx={{
-            p: 0.5,
+          key={`item-${index}`} 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            py: 0.5,
+            px: 1,
             borderRadius: 1,
             transition: 'all 0.2s',
+            cursor: 'pointer',
             '&:hover': {
-              backgroundColor: alpha(entry.color, 0.1),
-              transform: 'translateX(2px)'
+              backgroundColor: alpha(theme.palette.primary.main, 0.05)
             }
           }}
+          onClick={() => onCategoryClick(entry.value)}
         >
           <Box
             sx={{ 
@@ -180,6 +183,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Calculate totals by category
   const calculateCategoryTotals = (): CategoryTotal[] => {
@@ -307,13 +311,15 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     dataKey="value"
                     strokeWidth={2}
                     stroke={theme.palette.background.paper}
+                    onClick={(data) => setSelectedCategory(data.name)}
                   >
                     {categoryTotals.map((entry) => (
                       <Cell 
                         key={`cell-${entry.name}`} 
                         fill={getCategoryColor(entry.name, theme)} 
                         style={{
-                          filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))'
+                          filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
+                          cursor: 'pointer'
                         }}
                       />
                     ))}
@@ -338,6 +344,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                   amount: item.value,
                   currency
                 }))} 
+                onCategoryClick={setSelectedCategory}
               />
             </Box>
           </Stack>
@@ -365,13 +372,15 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     dataKey="value"
                     strokeWidth={2}
                     stroke={theme.palette.background.paper}
+                    onClick={(data) => setSelectedCategory(data.name)}
                   >
                     {categoryTotals.map((entry) => (
                       <Cell 
                         key={`cell-${entry.name}`} 
                         fill={getCategoryColor(entry.name, theme)} 
                         style={{
-                          filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))'
+                          filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
+                          cursor: 'pointer'
                         }}
                       />
                     ))}
@@ -398,11 +407,22 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                   amount: item.value,
                   currency
                 }))} 
+                onCategoryClick={setSelectedCategory}
               />
             </Box>
           </Box>
         )}
       </Box>
+      
+      {/* Category Items Dialog */}
+      {selectedCategory && (
+        <CategoryItemsDialog
+          open={!!selectedCategory}
+          onClose={() => setSelectedCategory(null)}
+          category={selectedCategory}
+          items={items.filter(item => item.Category === selectedCategory)}
+        />
+      )}
     </DashboardCard>
   );
 };

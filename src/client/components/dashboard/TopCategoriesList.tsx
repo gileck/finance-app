@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -14,6 +14,7 @@ import { CardItem } from '@/apis/cardItems/types';
 import { DashboardCard } from './DashboardCard';
 import CategoryIcon from '@mui/icons-material/Category';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
+import { CategoryItemsDialog } from './CategoryItemsDialog';
 
 interface TopCategoriesListProps {
   items: CardItem[];
@@ -34,6 +35,7 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
   limit = 5
 }) => {
   const theme = useTheme();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   // Calculate totals by category
   const calculateCategoryTotals = (): CategoryTotal[] => {
@@ -130,8 +132,10 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
                   transition: 'all 0.2s',
                   '&:hover': {
                     backgroundColor: alpha(theme.palette.primary.main, 0.05)
-                  }
+                  },
+                  cursor: 'pointer'
                 }}
+                onClick={() => setSelectedCategory(category.name)}
               >
                 <Box width="100%" display="flex" alignItems="center" mb={0.5}>
                   <Box 
@@ -208,6 +212,16 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
           );
         })}
       </List>
+      
+      {/* Category Items Dialog */}
+      {selectedCategory && (
+        <CategoryItemsDialog
+          open={!!selectedCategory}
+          onClose={() => setSelectedCategory(null)}
+          category={selectedCategory}
+          items={items.filter(item => item.Category === selectedCategory)}
+        />
+      )}
     </DashboardCard>
   );
 };

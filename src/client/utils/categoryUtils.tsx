@@ -38,7 +38,8 @@ const categoryToIcon: CategoryIconMap = {
   'bike': BikeScooter,
   'internet': Computer,
   'bills': LocalAtmIcon,
-  'money transfer': Paid
+  'money transfer': Paid,
+  'clothing': ShoppingBagIcon
 };
 
 /**
