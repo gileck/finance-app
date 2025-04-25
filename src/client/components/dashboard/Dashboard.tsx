@@ -8,6 +8,7 @@ import { TopCategoriesList } from './TopCategoriesList';
 import { RecentExpenses } from './RecentExpenses';
 import { CategoryPieChart } from './CategoryPieChart';
 import { RecurringTransactions } from './RecurringTransactions';
+import { PendingItems } from './PendingItems';
 
 export const Dashboard: React.FC = () => {
   const [cardItems, setCardItems] = useState<CardItem[]>([]);
@@ -24,11 +25,11 @@ export const Dashboard: React.FC = () => {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        
+
         // Create date range for the current month
         const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
         const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-        
+
         const response = await getCardItems({
           filter: {
             startDate,
@@ -70,7 +71,7 @@ export const Dashboard: React.FC = () => {
             if (a.year !== b.year) return b.year - a.year;
             return parseInt(b.month) - parseInt(a.month);
           });
-          
+
           setMonthlyTotals(sortedTotals);
         }
       } catch (err) {
@@ -86,11 +87,11 @@ export const Dashboard: React.FC = () => {
   // Calculate average monthly spending (excluding current month)
   const averageMonthlySpending = useMemo(() => {
     if (monthlyTotals.length <= 1) return null;
-    
+
     // Skip the current month (index 0) and calculate average of previous months
     const previousMonths = monthlyTotals.slice(1);
     if (previousMonths.length === 0) return null;
-    
+
     const sum = previousMonths.reduce((acc, month) => acc + month.total, 0);
     return sum / previousMonths.length;
   }, [monthlyTotals]);
@@ -105,7 +106,7 @@ export const Dashboard: React.FC = () => {
           {error}
         </Alert>
       )}
-      
+
       {/* <Typography 
         variant="h4" 
         component="h1" 
@@ -117,90 +118,109 @@ export const Dashboard: React.FC = () => {
       >
         Financial Dashboard
       </Typography> */}
-      
-      <Box sx={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
+
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
         gap: 3
       }}>
         {/* Current Month Spending */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
-          <CurrentMonthSpending 
+          <CurrentMonthSpending
             currentMonth={currentMonth}
             averageSpending={averageMonthlySpending}
             loading={loadingTotals}
           />
         </Box>
-        
+
         {/* Recent Expenses (48h) */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
-          <RecentExpenses 
+          <RecentExpenses
             items={cardItems}
             loading={loadingItems}
             limit={5}
           />
         </Box>
       </Box>
-      
+
       {/* Second row */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         mb: 3
       }}>
         {/* Top Spendings List */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
-          <TopSpendingsList 
+          <TopSpendingsList
             items={cardItems}
             loading={loadingItems}
             limit={5}
           />
         </Box>
-        
+
         {/* Top Categories List */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
-          <TopCategoriesList 
+          <TopCategoriesList
             items={cardItems}
             loading={loadingItems}
             limit={5}
           />
         </Box>
       </Box>
-      
+
       {/* Third row */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
         justifyContent: 'space-between',
         mb: 3
       }}>
         {/* Recurring Transactions */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
           <RecurringTransactions limit={10} />
         </Box>
-        
+
         {/* Category Pie Chart */}
-        <Box sx={{ 
+        <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 3, md: 0 }
         }}>
-          <CategoryPieChart 
+          <CategoryPieChart
+            items={cardItems}
+            loading={loadingItems}
+          />
+        </Box>
+      </Box>
+
+      {/* Fourth row */}
+      <Box sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        mb: 3
+      }}>
+        {/* Pending Items */}
+        <Box sx={{
+          width: { xs: '100%', md: 'calc(50% - 12px)' },
+          mb: { xs: 3, md: 0 }
+        }}>
+          <PendingItems
             items={cardItems}
             loading={loadingItems}
           />

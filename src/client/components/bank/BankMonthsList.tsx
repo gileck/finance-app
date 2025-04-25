@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  List, 
-  ListItem, 
-  CircularProgress, 
-  useTheme, 
-  Collapse, 
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  CircularProgress,
+  useTheme,
+  Collapse,
   IconButton,
   Paper,
   Divider
@@ -27,11 +27,11 @@ interface BankMonthsListProps {
   onItemUpdated?: (item: BankItem) => void;
 }
 
-export const BankMonthsList: React.FC<BankMonthsListProps> = ({ 
-  months, 
-  items, 
+export const BankMonthsList: React.FC<BankMonthsListProps> = ({
+  months,
+  items,
   loading,
-  onItemUpdated 
+  onItemUpdated
 }) => {
   const theme = useTheme();
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
@@ -79,19 +79,19 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
   const handleSaveItem = async (updatedItem: BankItem) => {
     try {
       const result = await updateBankItem(updatedItem);
-      
+
       if (result.success && result.updatedItem) {
         const updatedItems = {
           ...localItems,
           [updatedItem.id]: result.updatedItem
         };
         setLocalItems(updatedItems);
-        
+
         if (onItemUpdated) {
           onItemUpdated(result.updatedItem);
         }
       }
-      
+
       setEditDialogOpen(false);
     } catch (error) {
       console.error('Error saving bank item:', error);
@@ -125,17 +125,17 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
       const yearShort = year.toString().slice(2);
       return `${monthNumber}/${yearShort}`;
     }
-    
+
     // Otherwise try to convert from month name
     const monthMap: Record<string, number> = {
       'January': 1, 'February': 2, 'March': 3, 'April': 4,
       'May': 5, 'June': 6, 'July': 7, 'August': 8,
       'September': 9, 'October': 10, 'November': 11, 'December': 12
     };
-    
+
     const monthNum = monthMap[monthName] || 1;
     const yearShort = year.toString().slice(2);
-    
+
     return `${monthNum}/${yearShort}`;
   };
 
@@ -154,14 +154,14 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
   // Group months by year
   const groupMonthsByYear = () => {
     const grouped: Record<number, MonthlyBankTotal[]> = {};
-    
+
     months.forEach(month => {
       if (!grouped[month.year]) {
         grouped[month.year] = [];
       }
       grouped[month.year].push(month);
     });
-    
+
     // Sort years in descending order
     return Object.entries(grouped)
       .sort(([yearA], [yearB]) => Number(yearB) - Number(yearA))
@@ -178,27 +178,27 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
       {groupedByYear.map(yearGroup => (
         <Box key={yearGroup.year} sx={{ mb: 2 }}>
           {/* Year divider */}
-          <Box 
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
               mb: 0.5,
               mt: 1,
               position: 'relative'
             }}
           >
-            <Box 
-              sx={{ 
-                width: '100%', 
-                height: '1px', 
-                bgcolor: theme.palette.divider 
-              }} 
+            <Box
+              sx={{
+                width: '100%',
+                height: '1px',
+                bgcolor: theme.palette.divider
+              }}
             />
-            <Typography 
-              variant="body2" 
-              fontWeight="medium" 
+            <Typography
+              variant="body2"
+              fontWeight="medium"
               color="text.secondary"
-              sx={{ 
+              sx={{
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
@@ -209,9 +209,9 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
               {yearGroup.year}
             </Typography>
           </Box>
-          
+
           {/* Months for this year */}
-          <List sx={{ 
+          <List sx={{
             width: '100%',
             border: 'none',
             borderRadius: 0,
@@ -223,15 +223,15 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                 const date = new Date(item.Date);
                 return date.getFullYear() === month.year && (date.getMonth() + 1) === Number(month.month);
               });
-              
+
               const { income, expenses, balance } = calculateMonthStats(monthItems);
-              
+
               return (
-                <Paper 
-                  key={monthKey} 
-                  elevation={0} 
-                  sx={{ 
-                    mb: 0, 
+                <Paper
+                  key={monthKey}
+                  elevation={0}
+                  sx={{
+                    mb: 0,
                     borderRadius: 0,
                     border: `1px solid ${theme.palette.divider}`,
                     borderTop: index > 0 ? 'none' : `1px solid ${theme.palette.divider}`,
@@ -239,89 +239,83 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                   }}
                 >
                   {/* Compact view */}
-                  <ListItem 
-                    onClick={() => handleExpand(monthKey)} 
-                    sx={{ 
-                      bgcolor: expandedMonth === monthKey ? 
-                        `${theme.palette.primary.main}10` : 
+                  <ListItem
+                    onClick={() => handleExpand(monthKey)}
+                    sx={{
+                      bgcolor: expandedMonth === monthKey ?
+                        `${theme.palette.primary.main}10` :
                         'background.paper',
                       cursor: 'pointer',
                       transition: 'background-color 0.2s',
                       '&:hover': {
-                        bgcolor: expandedMonth === monthKey ? 
-                          `${theme.palette.primary.main}15` : 
+                        bgcolor: expandedMonth === monthKey ?
+                          `${theme.palette.primary.main}15` :
                           theme.palette.action.hover
                       },
                       py: 1,
                       px: 2
                     }}
                   >
-                    <Box sx={{ 
-                      display: 'flex', 
-                      width: '100%', 
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
+                    <Box sx={{
+                      display: 'grid',
+                      width: '100%',
+                      gridTemplateColumns: '40px 80px 80px 60px 25px',
+                      alignItems: 'center',
+                      pr: 1,
+                      justifyContent: 'space-between'
                     }}>
                       {/* Month name */}
                       <Typography variant="body1" fontWeight="medium">
                         {formatCompactMonth(month.monthName, month.year, month.month)}
                       </Typography>
-                      
-                      {/* Compact financial data */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {/* Income */}
-                        <Box sx={{ width: '30%', textAlign: 'center' }}>
-                          <Typography 
-                            variant="body2" 
-                            color={theme.palette.success.main}
-                            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            <ArrowUpwardIcon fontSize="inherit" sx={{ mr: 0.5 }} />
-                            {formatCurrency(income)}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Expenses */}
-                        <Box sx={{ width: '30%', textAlign: 'center' }}>
-                          <Typography 
-                            variant="body2" 
-                            color={theme.palette.error.main}
-                            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            <ArrowDownwardIcon fontSize="inherit" sx={{ mr: 0.5 }} />
-                            {formatCurrency(expenses)}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Balance */}
-                        <Box sx={{ width: '30%', textAlign: 'center' }}>
-                          <Typography 
-                            variant="body2" 
-                            fontWeight="bold" 
-                            color={balance >= 0 ? theme.palette.success.main : theme.palette.error.main}
-                          >
-                            {formatCurrency(balance)}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Expand button */}
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExpand(monthKey);
-                          }}
-                        >
-                          {expandedMonth === monthKey ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </IconButton>
-                      </Box>
+
+                      {/* Income */}
+                      <Typography
+                        variant="body2"
+                        color={theme.palette.success.main}
+                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}
+                      >
+                        <ArrowUpwardIcon fontSize="inherit" sx={{ mr: 0.5 }} />
+                        {formatCurrency(income)}
+                      </Typography>
+
+                      {/* Expenses */}
+                      <Typography
+                        variant="body2"
+                        color={theme.palette.error.main}
+                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}
+                      >
+                        <ArrowDownwardIcon fontSize="inherit" sx={{ mr: 0.5 }} />
+                        {formatCurrency(expenses)}
+                      </Typography>
+
+                      {/* Balance */}
+                      <Typography
+                        variant="body2"
+                        fontWeight="bold"
+                        color={balance >= 0 ? theme.palette.success.main : theme.palette.error.main}
+                        sx={{ textAlign: 'right' }}
+                      >
+                        {formatCurrency(balance)}
+                      </Typography>
+
+                      {/* Expand button */}
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExpand(monthKey);
+                        }}
+                      >
+                        {expandedMonth === monthKey ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      </IconButton>
                     </Box>
                   </ListItem>
-                  
+
                   <Collapse in={expandedMonth === monthKey} timeout="auto" unmountOnExit>
-                    <Box 
-                      sx={{ 
-                        p: '5px', 
+                    <Box
+                      sx={{
+                        p: '5px',
                         bgcolor: theme.palette.background.default,
                         borderTop: `1px solid ${theme.palette.divider}`
                       }}
@@ -333,43 +327,43 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                           {(() => {
                             // Group items by Description
                             const groupedItems: Record<string, BankItem[]> = {};
-                            
+
                             monthItems.forEach(item => {
                               if (!groupedItems[item.Description]) {
                                 groupedItems[item.Description] = [];
                               }
                               groupedItems[item.Description].push(item);
                             });
-                            
+
                             // Calculate total for each group
                             const groupTotals = Object.entries(groupedItems).map(([name, items]) => {
                               const total = items.reduce((sum, item) => sum + item.Amount, 0);
-                              return { 
-                                name, 
-                                items, 
+                              return {
+                                name,
+                                items,
                                 total,
                                 absTotal: Math.abs(total)
                               };
                             });
-                            
+
                             // Sort by absolute value (highest first)
                             groupTotals.sort((a, b) => b.absTotal - a.absTotal);
-                            
+
                             return (
                               <List dense>
                                 {groupTotals.map(({ name, items, total }, groupIndex) => {
                                   const groupKey = `${monthKey}-${name}`;
                                   const isGroupExpanded = expandedGroups[groupKey] || false;
-                                  
+
                                   return (
                                     <React.Fragment key={name}>
                                       {groupIndex > 0 && (
                                         <Divider sx={{ my: 1 }} />
                                       )}
                                       <Box sx={{ mb: 1 }}>
-                                        <Box 
-                                          sx={{ 
-                                            display: 'flex', 
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
                                             mb: 0.5,
@@ -384,8 +378,8 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                                           onClick={() => handleGroupToggle(groupKey)}
                                         >
                                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <IconButton 
-                                              size="small" 
+                                            <IconButton
+                                              size="small"
                                               sx={{ mr: 1, p: 0 }}
                                             >
                                               {isGroupExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
@@ -394,9 +388,9 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                                               {name}
                                             </Typography>
                                             {items.length > 1 && (
-                                              <Typography 
-                                                variant="caption" 
-                                                sx={{ 
+                                              <Typography
+                                                variant="caption"
+                                                sx={{
                                                   bgcolor: theme.palette.action.selected,
                                                   borderRadius: '50%',
                                                   width: 20,
@@ -411,22 +405,23 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                                               </Typography>
                                             )}
                                           </Box>
-                                          <Typography 
-                                            variant="body2" 
+                                          <Typography
+                                            variant="body2"
                                             fontWeight="medium"
                                             color={total >= 0 ? theme.palette.success.main : theme.palette.error.main}
+                                            sx={{ width: '80px', textAlign: 'right' }}
                                           >
                                             {total >= 0 ? '+' : ''}{total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                           </Typography>
                                         </Box>
-                                        
+
                                         <Collapse in={isGroupExpanded} timeout="auto" unmountOnExit>
                                           <Box sx={{ pl: 2 }}>
                                             {items.map(item => (
-                                              <ListItem 
-                                                key={item.id} 
+                                              <ListItem
+                                                key={item.id}
                                                 onClick={() => handleItemClick(item)}
-                                                sx={{ 
+                                                sx={{
                                                   cursor: 'pointer',
                                                   py: 0.5,
                                                   px: 1,
@@ -437,18 +432,19 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
                                                 }}
                                                 dense
                                               >
-                                                <Box sx={{ 
-                                                  display: 'flex', 
-                                                  width: '100%', 
+                                                <Box sx={{
+                                                  display: 'flex',
+                                                  width: '100%',
                                                   justifyContent: 'space-between',
                                                   alignItems: 'center'
                                                 }}>
                                                   <Typography variant="body2" color="text.secondary">
                                                     {item.Date}
                                                   </Typography>
-                                                  <Typography 
-                                                    variant="body2" 
+                                                  <Typography
+                                                    variant="body2"
                                                     color={item.Amount >= 0 ? theme.palette.success.main : theme.palette.error.main}
+                                                    sx={{ width: '80px', textAlign: 'right' }}
                                                   >
                                                     {item.Amount >= 0 ? '+' : ''}{item.Amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                   </Typography>
@@ -473,10 +469,11 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
             })}
           </List>
         </Box>
-      ))}
-      <BankMonthDetailsDialog 
-        open={detailsDialogOpen} 
-        item={selectedItem} 
+      ))
+      }
+      <BankMonthDetailsDialog
+        open={detailsDialogOpen}
+        item={selectedItem}
         onClose={handleDialogClose}
         onEdit={handleEditClick}
       />
@@ -486,6 +483,6 @@ export const BankMonthsList: React.FC<BankMonthsListProps> = ({
         onClose={handleEditDialogClose}
         onSave={handleSaveItem}
       />
-    </Box>
+    </Box >
   );
 };
