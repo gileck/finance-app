@@ -52,7 +52,7 @@ export const getCategoryIcon = (category: string): React.ReactElement => {
   if (!category) {
     return <MoreHorizIcon fontSize="small" />;
   }
-  
+
   const lowerCaseCategory = category.toLowerCase();
   const Icon = categoryToIcon[lowerCaseCategory] || categoryToIcon['default'];
   return <Icon fontSize="small" />;
@@ -67,7 +67,7 @@ export const getCategoryIcon = (category: string): React.ReactElement => {
 export const getCategoryColor = (category: string, _theme?: Theme): string => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { _theme: _unused } = { _theme }; // Properly handle unused parameter
-  
+
   // Rich color palette with a variety of distinct colors
   const colorMap: Record<string, string> = {
     'groceries': '#2E7D32', // Dark green
@@ -105,12 +105,12 @@ export const getCategoryColor = (category: string, _theme?: Theme): string => {
     'childcare': '#26A69A', // Teal
     'furniture': '#8D6E63', // Brown
   };
-  
+
   // Add null check to prevent TypeError when category is null or undefined
   if (!category) {
     return '#9E9E9E'; // Default grey color
   }
-  
+
   return colorMap[category.toLowerCase()] || '#9E9E9E'; // Default grey color
 };
 
@@ -125,7 +125,12 @@ export const formatCurrency = (amount: number, currency: string): string => {
   if (currency === 'NIS') {
     return `₪${Math.round(amount)}`;
   }
-  
+
+  // If currency is $ symbol, use USD code
+  if (currency === '$') {
+    return `$${Math.round(amount)}`;
+  }
+
   // For other currencies, use the Intl formatter
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
