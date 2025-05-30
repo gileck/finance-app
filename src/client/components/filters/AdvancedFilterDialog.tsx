@@ -21,7 +21,8 @@ import {
   FormControlLabel,
   Switch,
   InputAdornment,
-  Stack
+  Stack,
+  CircularProgress
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -37,6 +38,8 @@ export interface FilterOptions {
   sortBy?: 'date' | 'amount' | 'category' | 'name';
   sortDirection?: 'asc' | 'desc';
   pendingTransactionOnly?: boolean;
+  hasVersion?: boolean | null;
+  specificVersion?: string;
 }
 
 interface AdvancedFilterDialogProps {
@@ -45,6 +48,7 @@ interface AdvancedFilterDialogProps {
   onApplyFilters: (filters: FilterOptions) => void;
   availableCategories: string[];
   currentFilters: FilterOptions;
+  disabled?: boolean;
 }
 
 const ITEM_HEIGHT = 48;
@@ -63,7 +67,8 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
   onClose,
   onApplyFilters,
   availableCategories,
-  currentFilters
+  currentFilters,
+  disabled = false
 }) => {
   const [filters, setFilters] = useState<FilterOptions>(currentFilters);
   const [startDateStr, setStartDateStr] = useState<string>(
@@ -72,7 +77,16 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
   const [endDateStr, setEndDateStr] = useState<string>(
     filters.endDate ? format(filters.endDate, 'yyyy-MM-dd') : ''
   );
-  const [dateError, setDateError] = useState<{start: string; end: string}>({start: '', end: ''});
+  const [dateError, setDateError] = useState<{ start: string; end: string }>({ start: '', end: '' });
+  const [versionFilterType, setVersionFilterType] = useState<string>(
+    filters.hasVersion === true
+      ? 'has'
+      : filters.hasVersion === false
+        ? 'none'
+        : filters.specificVersion && filters.specificVersion.trim() !== ''
+          ? 'specific'
+          : ''
+  );
 
   // Reset filters when dialog opens with current filters
   useEffect(() => {
@@ -80,7 +94,16 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
       setFilters(currentFilters);
       setStartDateStr(currentFilters.startDate ? format(currentFilters.startDate, 'yyyy-MM-dd') : '');
       setEndDateStr(currentFilters.endDate ? format(currentFilters.endDate, 'yyyy-MM-dd') : '');
-      setDateError({start: '', end: ''});
+      setDateError({ start: '', end: '' });
+      setVersionFilterType(
+        currentFilters.hasVersion === true
+          ? 'has'
+          : currentFilters.hasVersion === false
+            ? 'none'
+            : currentFilters.specificVersion && currentFilters.specificVersion.trim() !== ''
+              ? 'specific'
+              : ''
+      );
     }
   }, [open, currentFilters]);
 
@@ -95,50 +118,50 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
   const handleStartDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setStartDateStr(value);
-    
+
     if (!value) {
       setFilters({
         ...filters,
         startDate: null
       });
-      setDateError({...dateError, start: ''});
+      setDateError({ ...dateError, start: '' });
       return;
     }
-    
+
     const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
     if (isValid(parsedDate)) {
       setFilters({
         ...filters,
         startDate: parsedDate
       });
-      setDateError({...dateError, start: ''});
+      setDateError({ ...dateError, start: '' });
     } else {
-      setDateError({...dateError, start: 'Invalid date format'});
+      setDateError({ ...dateError, start: 'Invalid date format' });
     }
   };
 
   const handleEndDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setEndDateStr(value);
-    
+
     if (!value) {
       setFilters({
         ...filters,
         endDate: null
       });
-      setDateError({...dateError, end: ''});
+      setDateError({ ...dateError, end: '' });
       return;
     }
-    
+
     const parsedDate = parse(value, 'yyyy-MM-dd', new Date());
     if (isValid(parsedDate)) {
       setFilters({
         ...filters,
         endDate: parsedDate
       });
-      setDateError({...dateError, end: ''});
+      setDateError({ ...dateError, end: '' });
     } else {
-      setDateError({...dateError, end: 'Invalid date format'});
+      setDateError({ ...dateError, end: 'Invalid date format' });
     }
   };
 
@@ -178,6 +201,45 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
     });
   };
 
+  const handleVersionFilterChange = (event: SelectChangeEvent) => {
+    const value = event.target.value;
+    setVersionFilterType(value);
+
+    if (value === 'has') {
+      setFilters({
+        ...filters,
+        hasVersion: true,
+        specificVersion: '',
+      });
+    } else if (value === 'none') {
+      setFilters({
+        ...filters,
+        hasVersion: false,
+        specificVersion: '',
+      });
+    } else if (value === 'specific') {
+      setFilters({
+        ...filters,
+        hasVersion: null,
+        specificVersion: filters.specificVersion || '',
+      });
+    } else {
+      // No filter selected
+      setFilters({
+        ...filters,
+        hasVersion: null,
+        specificVersion: '',
+      });
+    }
+  };
+
+  const handleSpecificVersionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({
+      ...filters,
+      specificVersion: event.target.value,
+    });
+  };
+
   const handleReset = () => {
     setFilters({
       categories: [],
@@ -189,10 +251,13 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
       sortBy: 'date',
       sortDirection: 'desc',
       pendingTransactionOnly: false,
+      hasVersion: null,
+      specificVersion: '',
     });
     setStartDateStr('');
     setEndDateStr('');
-    setDateError({start: '', end: ''});
+    setDateError({ start: '', end: '' });
+    setVersionFilterType('');
   };
 
   const handleApply = () => {
@@ -200,16 +265,16 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
     if (dateError.start || dateError.end) {
       return;
     }
-    
+
     onApplyFilters(filters);
     onClose();
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={disabled ? undefined : onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: {
@@ -218,9 +283,9 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
         }
       }}
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <DialogTitle sx={{
+        display: 'flex',
+        alignItems: 'center',
         gap: 1,
         bgcolor: 'primary.main',
         color: 'primary.contrastText',
@@ -229,7 +294,7 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
         <FilterListIcon />
         <Typography variant="h6">Advanced Filters</Typography>
       </DialogTitle>
-      
+
       <DialogContent dividers>
         <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {/* Date Range */}
@@ -246,6 +311,7 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 onChange={handleStartDateChange}
                 error={!!dateError.start}
                 helperText={dateError.start}
+                disabled={disabled}
                 InputLabelProps={{
                   shrink: true,
                 }}
@@ -265,6 +331,7 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 onChange={handleEndDateChange}
                 error={!!dateError.end}
                 helperText={dateError.end}
+                disabled={disabled}
                 InputLabelProps={{
                   shrink: true,
                 }}
@@ -278,9 +345,9 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
               />
             </Stack>
           </Box>
-          
+
           <Divider />
-          
+
           {/* Amount Range */}
           <Box>
             <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -293,7 +360,8 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 fullWidth
                 value={filters.minAmount === null ? '' : filters.minAmount}
                 onChange={(e) => handleAmountChange('minAmount', e.target.value)}
-                InputProps={{ 
+                disabled={disabled}
+                InputProps={{
                   inputProps: { min: 0 },
                   startAdornment: <InputAdornment position="start">₪</InputAdornment>,
                 }}
@@ -304,16 +372,17 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 fullWidth
                 value={filters.maxAmount === null ? '' : filters.maxAmount}
                 onChange={(e) => handleAmountChange('maxAmount', e.target.value)}
-                InputProps={{ 
+                disabled={disabled}
+                InputProps={{
                   inputProps: { min: 0 },
                   startAdornment: <InputAdornment position="start">₪</InputAdornment>,
                 }}
               />
             </Stack>
           </Box>
-          
+
           <Divider />
-          
+
           {/* Categories */}
           <Box>
             <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -327,6 +396,7 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 value={filters.categories || []}
                 onChange={handleCategoryChange}
                 input={<OutlinedInput label="Select Categories" />}
+                disabled={disabled}
                 renderValue={(selected) => (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selected.map((value) => (
@@ -345,9 +415,9 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
               </Select>
             </FormControl>
           </Box>
-          
+
           <Divider />
-          
+
           {/* Search Term */}
           <Box>
             <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -358,11 +428,12 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
               fullWidth
               value={filters.searchTerm || ''}
               onChange={handleSearchTermChange}
+              disabled={disabled}
             />
           </Box>
-          
+
           <Divider />
-          
+
           {/* Sorting */}
           <Box>
             <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
@@ -376,6 +447,7 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                   value={filters.sortBy || 'date'}
                   onChange={handleSortByChange}
                   label="Sort By"
+                  disabled={disabled}
                 >
                   <MenuItem value="date">Date</MenuItem>
                   <MenuItem value="amount">Amount</MenuItem>
@@ -388,15 +460,16 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                   <Switch
                     checked={filters.sortDirection === 'desc'}
                     onChange={handleSortDirectionChange}
+                    disabled={disabled}
                   />
                 }
                 label={filters.sortDirection === 'desc' ? "Descending" : "Ascending"}
               />
             </Stack>
           </Box>
-          
+
           <Divider />
-          
+
           {/* Pending Transaction */}
           <Box>
             <FormControlLabel
@@ -404,37 +477,80 @@ export const AdvancedFilterDialog: React.FC<AdvancedFilterDialogProps> = ({
                 <Switch
                   checked={filters.pendingTransactionOnly || false}
                   onChange={handlePendingTransactionChange}
+                  disabled={disabled}
                 />
               }
               label="Pending Transaction Only"
             />
           </Box>
+
+          {/* Version Filter */}
+          <Box>
+            <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+              Version Filter
+            </Typography>
+            <FormControl fullWidth>
+              <InputLabel id="version-filter-label">Version Filter</InputLabel>
+              <Select
+                labelId="version-filter-label"
+                value={versionFilterType}
+                onChange={handleVersionFilterChange}
+                label="Version Filter"
+                disabled={disabled}
+              >
+                <MenuItem value="">No Filter</MenuItem>
+                <MenuItem value="has">Has Version</MenuItem>
+                <MenuItem value="none">No Version</MenuItem>
+                <MenuItem value="specific">Specific Version</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Specific Version - only show when specific is selected */}
+          {versionFilterType === 'specific' && (
+            <Box>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                Specific Version
+              </Typography>
+              <TextField
+                label="Enter Version"
+                fullWidth
+                value={filters.specificVersion || ''}
+                onChange={handleSpecificVersionChange}
+                placeholder="e.g., 1.0.0"
+                disabled={disabled}
+              />
+            </Box>
+          )}
         </Box>
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, py: 2, justifyContent: 'space-between' }}>
-        <Button 
-          onClick={handleReset} 
-          variant="outlined" 
+        <Button
+          onClick={handleReset}
+          variant="outlined"
           color="secondary"
+          disabled={disabled}
         >
           Reset Filters
         </Button>
         <Box>
-          <Button 
-            onClick={onClose} 
-            color="primary" 
+          <Button
+            onClick={onClose}
+            color="primary"
             sx={{ mr: 1 }}
+            disabled={disabled}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleApply} 
-            variant="contained" 
+          <Button
+            onClick={handleApply}
+            variant="contained"
             color="primary"
-            disabled={!!dateError.start || !!dateError.end}
+            disabled={!!dateError.start || !!dateError.end || disabled}
+            startIcon={disabled ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            Apply Filters
+            {disabled ? 'Applying...' : 'Apply Filters'}
           </Button>
         </Box>
       </DialogActions>

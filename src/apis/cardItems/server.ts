@@ -1,7 +1,7 @@
 import { getFileAsString, uploadFile } from "@/server/s3/sdk";
-import { 
+import {
   CardItem,
-  GetCardItemsRequest, 
+  GetCardItemsRequest,
   GetCardItemsResponse,
   GetCardItemRequest,
   GetCardItemResponse,
@@ -47,10 +47,10 @@ const saveCardItemsToS3 = async (cardItems: Record<string, CardItem>): Promise<v
   try {
     const dbContent = await getFileAsString(DB_FILE_NAME);
     const db = JSON.parse(dbContent);
-    
+
     // Update only the cardItems property
     db.cardItems = cardItems;
-    
+
     await uploadFile({
       content: JSON.stringify(db, null, 2),
       fileName: DB_FILE_NAME,
@@ -65,18 +65,18 @@ const saveCardItemsToS3 = async (cardItems: Record<string, CardItem>): Promise<v
 // Helper function to group card items by month
 const groupByMonth = (items: Record<string, CardItem>): Record<string, CardItem[]> => {
   const grouped: Record<string, CardItem[]> = {};
-  
+
   Object.values(items).forEach(item => {
     const date = new Date(item.Date);
     const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    
+
     if (!grouped[monthYear]) {
       grouped[monthYear] = [];
     }
-    
+
     grouped[monthYear].push(item);
   });
-  
+
   return grouped;
 };
 
@@ -98,13 +98,13 @@ const calculateMonthlyTotals = (
 
   // Group items by month and year
   const monthlyData: Record<string, { items: CardItem[], total: number, currency: string }> = {};
-  
+
   Object.values(filteredItems).forEach(item => {
     const date = new Date(item.Date);
     const month = date.getMonth() + 1; // JavaScript months are 0-indexed
     const year = date.getFullYear();
     const key = `${year}-${String(month).padStart(2, '0')}`;
-    
+
     if (!monthlyData[key]) {
       monthlyData[key] = {
         items: [],
@@ -112,21 +112,21 @@ const calculateMonthlyTotals = (
         currency: item.Currency // Assuming all items in a month have the same currency
       };
     }
-    
+
     monthlyData[key].items.push(item);
     monthlyData[key].total += item.Amount;
   });
-  
+
   // Convert to array of MonthlyTotal objects
   const monthlyTotals: MonthlyTotal[] = Object.entries(monthlyData).map(([key, data]) => {
     const [yearStr, monthStr] = key.split('-');
     const year = parseInt(yearStr);
     const month = monthStr;
-    
+
     // Get month name
     const date = new Date(year, parseInt(monthStr) - 1, 1);
     const monthName = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
-    
+
     return {
       month,
       year,
@@ -135,7 +135,7 @@ const calculateMonthlyTotals = (
       monthName
     };
   });
-  
+
   // Sort by year and month (descending)
   return monthlyTotals.sort((a, b) => {
     if (a.year !== b.year) {
@@ -151,21 +151,39 @@ export const getAllCardItems = async (
 ): Promise<GetCardItemsResponse> => {
   try {
     const cardItems = await getCardItemsFromS3();
-    
+
     // Apply filters if provided
     let filteredItems = { ...cardItems };
-    
+
     if (request.filter) {
-      const { category, startDate, endDate, pendingTransactionOnly } = request.filter;
-      
-      if (category || startDate || endDate || pendingTransactionOnly) {
+      const {
+        category,
+        categories,
+        startDate,
+        endDate,
+        minAmount,
+        maxAmount,
+        searchTerm,
+        pendingTransactionOnly,
+        hasVersion,
+        specificVersion
+      } = request.filter;
+
+      if (category || (categories && categories.length > 0) || startDate || endDate || minAmount !== undefined || maxAmount !== undefined || searchTerm || pendingTransactionOnly || hasVersion !== undefined || specificVersion) {
         filteredItems = Object.entries(cardItems).reduce((filtered, [id, item]) => {
           let include = true;
-          
+
+          // Category filtering (single category)
           if (category && item.Category !== category) {
             include = false;
           }
-          
+
+          // Categories filtering (multiple categories)
+          if (categories && categories.length > 0 && !categories.includes(item.Category)) {
+            include = false;
+          }
+
+          // Date range filtering
           if (startDate) {
             const itemDate = new Date(item.Date);
             const filterStartDate = new Date(startDate);
@@ -173,7 +191,7 @@ export const getAllCardItems = async (
               include = false;
             }
           }
-          
+
           if (endDate) {
             const itemDate = new Date(item.Date);
             const filterEndDate = new Date(endDate);
@@ -181,33 +199,121 @@ export const getAllCardItems = async (
               include = false;
             }
           }
-          
+
+          // Amount range filtering
+          if (minAmount !== undefined && item.Amount < minAmount) {
+            include = false;
+          }
+
+          if (maxAmount !== undefined && item.Amount > maxAmount) {
+            include = false;
+          }
+
+          // Search term filtering (search in Name, DisplayName, and Comments)
+          if (searchTerm && searchTerm.trim() !== '') {
+            const searchLower = searchTerm.toLowerCase();
+            const nameMatch = item.Name.toLowerCase().includes(searchLower);
+            const displayNameMatch = item.DisplayName && item.DisplayName.toLowerCase().includes(searchLower);
+            const commentsMatch = item.Comments && item.Comments.some(comment =>
+              comment.toLowerCase().includes(searchLower)
+            );
+
+            if (!nameMatch && !displayNameMatch && !commentsMatch) {
+              include = false;
+            }
+          }
+
+          // Pending transaction filtering
           if (pendingTransactionOnly && !item.PendingTransaction) {
             include = false;
           }
-          
+
+          // Version filtering
+          if (hasVersion !== undefined) {
+            const itemHasVersion = item.version !== undefined && item.version !== null && item.version !== '';
+            if (hasVersion && !itemHasVersion) {
+              include = false;
+            } else if (!hasVersion && itemHasVersion) {
+              include = false;
+            }
+          }
+
+          if (specificVersion && specificVersion.trim() !== '') {
+            if (!item.version || item.version.toString() !== specificVersion) {
+              include = false;
+            }
+          }
+
           if (include) {
             filtered[id] = item;
           }
-          
+
           return filtered;
         }, {} as Record<string, CardItem>);
       }
     }
-    
+
+    // Apply sorting if provided
+    let sortedItems = filteredItems;
+    if (request.filter?.sortBy && request.filter?.sortDirection) {
+      const { sortBy, sortDirection } = request.filter;
+      const itemsArray = Object.values(filteredItems);
+
+      itemsArray.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch (sortBy) {
+          case 'date':
+            aValue = new Date(a.Date);
+            bValue = new Date(b.Date);
+            break;
+          case 'amount':
+            aValue = a.Amount;
+            bValue = b.Amount;
+            break;
+          case 'category':
+            aValue = a.Category.toLowerCase();
+            bValue = b.Category.toLowerCase();
+            break;
+          case 'name':
+            aValue = (a.DisplayName || a.Name).toLowerCase();
+            bValue = (b.DisplayName || b.Name).toLowerCase();
+            break;
+          default:
+            aValue = new Date(a.Date);
+            bValue = new Date(b.Date);
+        }
+
+        if (aValue < bValue) {
+          return sortDirection === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortDirection === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+
+      // Convert back to object with IDs as keys
+      sortedItems = itemsArray.reduce((result, item) => {
+        result[item.id] = item;
+        return result;
+      }, {} as Record<string, CardItem>);
+    }
+
     // Group by month for pagination
-    const groupedByMonth = groupByMonth(filteredItems);
-    
+    const groupedByMonth = groupByMonth(sortedItems);
+
     // Sort months in descending order (newest first)
     const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => b.localeCompare(a));
-    
+
     // Apply pagination if provided
     const limit = request.pagination?.limit || sortedMonths.length;
     const offset = request.pagination?.offset || 0;
-    
+
     const paginatedMonths = sortedMonths.slice(offset, offset + limit);
     const hasMore = offset + limit < sortedMonths.length;
-    
+
     // Create a new object with only the items from the paginated months
     const paginatedItems = paginatedMonths.reduce((result, month) => {
       const monthItems = groupedByMonth[month];
@@ -216,7 +322,7 @@ export const getAllCardItems = async (
       });
       return result;
     }, {} as Record<string, CardItem>);
-    
+
     return {
       cardItems: paginatedItems,
       hasMore
@@ -237,13 +343,13 @@ export const getCardItemById = async (
   try {
     const cardItems = await getCardItemsFromS3();
     const cardItem = cardItems[request.id];
-    
+
     if (!cardItem) {
       return {
         error: `Card item with ID ${request.id} not found`
       };
     }
-    
+
     return {
       cardItem
     };
@@ -260,23 +366,23 @@ export const updateCardItem = async (
 ): Promise<UpdateCardItemResponse> => {
   try {
     const { cardItem } = request;
-    
+
     if (!cardItem || !cardItem.id) {
       return {
         success: false,
         error: "Invalid card item data: missing ID"
       };
     }
-    
+
     const cardItems = await getCardItemsFromS3();
-    
+
     // Update the card item
     cardItems[cardItem.id] = {
       ...cardItem
     };
-    
+
     await saveCardItemsToS3(cardItems);
-    
+
     return {
       success: true,
       cardItem: cardItems[cardItem.id]
@@ -295,16 +401,16 @@ export const deleteCardItem = async (
 ): Promise<DeleteCardItemResponse> => {
   try {
     const { id } = request;
-    
+
     if (!id) {
       return {
         success: false,
         error: "Invalid request: missing ID"
       };
     }
-    
+
     const cardItems = await getCardItemsFromS3();
-    
+
     // Check if the card item exists
     if (!cardItems[id]) {
       return {
@@ -312,12 +418,12 @@ export const deleteCardItem = async (
         error: `Card item with ID ${id} not found`
       };
     }
-    
+
     // Delete the card item
     delete cardItems[id];
-    
+
     await saveCardItemsToS3(cardItems);
-    
+
     return {
       success: true
     };
@@ -335,22 +441,22 @@ export const getMonthlyTotals = async (
 ): Promise<GetMonthlyTotalsResponse> => {
   try {
     const cardItems = await getCardItemsFromS3();
-    
+
     // Get all unique categories
     const categories = Array.from(
       new Set(Object.values(cardItems).map(item => item.Category))
     ).sort();
-    
+
     // Calculate monthly totals
     const monthlyTotals = calculateMonthlyTotals(cardItems, request.filter);
-    
+
     // Apply pagination if provided
     const limit = request.pagination?.limit || monthlyTotals.length;
     const offset = request.pagination?.offset || 0;
-    
+
     const paginatedTotals = monthlyTotals.slice(offset, offset + limit);
     const hasMore = offset + limit < monthlyTotals.length;
-    
+
     return {
       monthlyTotals: paginatedTotals,
       hasMore,
@@ -371,7 +477,7 @@ export const getLastUpdate = async (
   try {
     const dbContent = await getFileAsString(DB_FILE_NAME);
     const db = JSON.parse(dbContent);
-    
+
     return {
       lastUpdate: db.lastUpdate || null
     };

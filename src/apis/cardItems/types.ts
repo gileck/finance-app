@@ -22,6 +22,7 @@ export interface CardItem {
     Address?: string;
     Phone?: string;
   };
+  version?: string;
 }
 
 export interface MonthlyTotal {
@@ -36,9 +37,17 @@ export interface GetCardItemsRequest {
   // Optional filter parameters could be added here
   filter?: {
     category?: string;
+    categories?: string[];
     startDate?: string;
     endDate?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    searchTerm?: string;
+    sortBy?: string;
+    sortDirection?: string;
     pendingTransactionOnly?: boolean;
+    hasVersion?: boolean;
+    specificVersion?: string;
   };
   // Pagination parameters
   pagination?: {
