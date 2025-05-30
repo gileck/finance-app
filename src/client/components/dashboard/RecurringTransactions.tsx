@@ -43,12 +43,12 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [recurringItems, setRecurringItems] = useState<CardItem[]>([]);
   const [allRecurringItems, setAllRecurringItems] = useState<CardItem[]>([]);
-  
+
   // State for history dialog
   const [historyDialogOpen, setHistoryDialogOpen] = useState<boolean>(false);
   const [selectedItemName, setSelectedItemName] = useState<string>('');
   const [historyItems, setHistoryItems] = useState<CardItem[]>([]);
-  
+
   // Fetch recurring transactions from the last 3 months
   useEffect(() => {
     const fetchRecurringTransactions = async () => {
@@ -57,11 +57,11 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        
+
         // Create date range for the last 3 months
         const startDate = new Date(year, month - 3, 1).toISOString().split('T')[0];
         const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-        
+
         const response = await getCardItems({
           filter: {
             startDate,
@@ -77,16 +77,16 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
           const recurring = allItems.filter(item => item.IsRecurringTransaction);
 
           console.log('recurring', recurring);
-          
+
           // Store all recurring items for history lookup
           setAllRecurringItems(recurring);
-          
+
           // Remove duplicates based on Name (or DisplayName if available)
           const uniqueRecurring = removeDuplicateTransactions(recurring);
-          
+
           // Sort by amount (highest first)
           uniqueRecurring.sort((a, b) => b.Amount - a.Amount);
-          
+
           // Limit the number of items
           setRecurringItems(uniqueRecurring.slice(0, 20));
         }
@@ -99,52 +99,52 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
 
     fetchRecurringTransactions();
   }, [limit]);
-  
+
   // Helper function to remove duplicate transactions
   const removeDuplicateTransactions = (items: CardItem[]): CardItem[] => {
     const uniqueMap = new Map<string, CardItem>();
-    
+
     items.forEach(item => {
       const key = item.DisplayName || item.Name;
-      
+
       // If this name doesn't exist in the map yet, or if this transaction has a higher amount
       if (!uniqueMap.has(key) || uniqueMap.get(key)!.Amount < item.Amount) {
         uniqueMap.set(key, item);
       }
     });
-    
+
     return Array.from(uniqueMap.values());
   };
-  
+
   // Handle item click to show history
   const handleItemClick = (item: CardItem) => {
     const itemName = item.DisplayName || item.Name;
     setSelectedItemName(itemName);
-    
+
     // Find all matching transactions
     const matchingItems = allRecurringItems.filter(
       i => (i.DisplayName || i.Name) === itemName
     );
-    
+
     // Sort by date (newest first)
     matchingItems.sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
-    
+
     setHistoryItems(matchingItems);
     setHistoryDialogOpen(true);
   };
-  
+
   // Format date for display in the history dialog
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    
+
     // For mobile-friendly display, show only month and day
     const monthDay = new Intl.DateTimeFormat('en-US', {
       month: 'numeric',
       day: 'numeric'
     }).format(date);
-    
-    
-    
+
+
+
     // For current year, show only month and day
     // For other years, include the year
     const currentYear = new Date().getFullYear();
@@ -154,7 +154,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
       return `${monthDay} ${date.getFullYear()}`;
     }
   };
-  
+
   // Render loading state
   if (loading) {
     return (
@@ -165,7 +165,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
       </DashboardCard>
     );
   }
-  
+
   // Render error state
   if (error) {
     return (
@@ -176,7 +176,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
       </DashboardCard>
     );
   }
-  
+
   // Render empty state
   if (recurringItems.length === 0) {
     return (
@@ -187,18 +187,18 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
       </DashboardCard>
     );
   }
-  
+
   return (
     <>
       <DashboardCard title="Recurring Transactions" icon={<RepeatIcon />} color="secondary">
         <List disablePadding>
           {recurringItems.map((item, index) => {
             const color = getCategoryColor(item.Category, theme);
-            
+
             return (
               <React.Fragment key={item.id}>
-                <ListItem 
-                  alignItems="flex-start" 
+                <ListItem
+                  alignItems="flex-start"
                   sx={{ cursor: 'pointer' }}
                   onClick={() => handleItemClick(item)}
                 >
@@ -247,7 +247,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
           })}
         </List>
       </DashboardCard>
-      
+
       {/* Transaction History Dialog */}
       <Dialog
         open={historyDialogOpen}
@@ -263,11 +263,11 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
             Showing {historyItems.length} occurrences
           </Typography>
         </DialogTitle>
-        <DialogContent 
-        sx={{
-          p:0
-        }}
-        dividers>
+        <DialogContent
+          sx={{
+            p: 0
+          }}
+          dividers>
           {historyItems.length === 0 ? (
             <Box p={2} textAlign="center">
               <Typography color="textSecondary">No history found</Typography>
@@ -281,7 +281,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
                     <TableCell align="right">Amount</TableCell>
                     <TableCell>Category</TableCell>
                     {historyItems[0].CardId && <TableCell>Card</TableCell>}
-                    {historyItems.some(item => item.Comments && item.Comments.length > 0) && (
+                    {historyItems.some(item => item.Comments && Array.isArray(item.Comments) && item.Comments.length > 0) && (
                       <TableCell>Comments</TableCell>
                     )}
                   </TableRow>
@@ -289,7 +289,7 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
                 <TableBody>
                   {historyItems.map(item => {
                     const color = getCategoryColor(item.Category, theme);
-                    
+
                     return (
                       <TableRow key={item.id}>
                         <TableCell>{formatDate(item.Date)}</TableCell>
@@ -310,9 +310,9 @@ export const RecurringTransactions: React.FC<RecurringTransactionsProps> = ({
                             {item.CardId} {item.CardType ? `(${item.CardType})` : ''}
                           </TableCell>
                         )}
-                        {historyItems.some(item => item.Comments && item.Comments.length > 0) && (
+                        {historyItems.some(item => item.Comments && Array.isArray(item.Comments) && item.Comments.length > 0) && (
                           <TableCell>
-                            {item.Comments && item.Comments.length > 0
+                            {item.Comments && Array.isArray(item.Comments) && item.Comments.length > 0
                               ? item.Comments.join(', ')
                               : '-'}
                           </TableCell>

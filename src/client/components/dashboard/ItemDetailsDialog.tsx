@@ -36,16 +36,16 @@ interface ItemDetailsDialogProps {
 // Format date and time
 const formatDateTime = (dateString: string): string => {
   const date = new Date(dateString);
-  
+
   // Format date as DD/MM/YYYY
   const day = date.getDate().toString().padStart(2, '0');
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const year = date.getFullYear();
-  
+
   // Format time as HH:MM
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
-  
+
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
 
@@ -57,36 +57,36 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
 }) => {
   const theme = useTheme();
   const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
-  
+
   if (!item) {
     return null;
   }
-  
+
   const color = getCategoryColor(item.Category, theme);
-  
+
   // Check if the item has the Details property
   const hasDetails = item.Details && (item.Details.Address || item.Details.Phone);
-  
+
   // Open JSON dialog
   const handleOpenJsonDialog = () => {
     setJsonDialogOpen(true);
   };
-  
+
   // Close JSON dialog
   const handleCloseJsonDialog = () => {
     setJsonDialogOpen(false);
   };
-  
+
   return (
     <>
-      <Dialog 
-        open={open} 
+      <Dialog
+        open={open}
         onClose={onClose}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
+        <DialogTitle sx={{
+          display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           pb: 1
@@ -114,9 +114,9 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
         <Divider />
         <DialogContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <Avatar 
-              sx={{ 
-                bgcolor: alpha(color, 0.1), 
+            <Avatar
+              sx={{
+                bgcolor: alpha(color, 0.1),
                 color: color,
                 mr: 2,
                 width: 48,
@@ -129,7 +129,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
               <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
                 {item.DisplayName || item.Name}
               </Typography>
-              
+
               <Chip
                 label={item.Category}
                 size="small"
@@ -141,10 +141,10 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 }}
               />
             </Box>
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                ml: 'auto', 
+            <Typography
+              variant="h6"
+              sx={{
+                ml: 'auto',
                 fontWeight: 'bold',
                 color: item.Amount > 0 ? theme.palette.success.main : theme.palette.text.primary
               }}
@@ -153,10 +153,10 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
             </Typography>
           </Box>
 
-          { item.DisplayName && <Typography variant="body2" sx={{ fontWeight: 'small' }}>
-                Full Name: {item.Name}
-              </Typography>}
-          
+          {item.DisplayName && <Typography variant="body2" sx={{ fontWeight: 'small' }}>
+            Full Name: {item.Name}
+          </Typography>}
+
           <Box sx={{ display: 'flex', flexWrap: 'wrap', mt: 2, mx: -1 }}>
             {/* Basic Transaction Information */}
             <Box sx={{ width: { xs: '100%', sm: '50%' }, p: 1 }}>
@@ -169,7 +169,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 </Typography>
               </Box>
             </Box>
-            
+
             {/* {item.ChargeDate && (
               <Box sx={{ width: { xs: '100%', sm: '50%' }, p: 1 }}>
                 <Box sx={{ mb: 2 }}>
@@ -185,8 +185,8 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 </Box>
               </Box>
             )} */}
-            
-          
+
+
 
             {/* Card Type (if available) */}
             {item.CardId && (
@@ -204,8 +204,8 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 </Box>
               </Box>
             )}
-            
-            
+
+
             {/* Transaction Type (if available)
             {item.TransactionType && (
               <Box sx={{ width: { xs: '100%', sm: '50%' }, p: 1 }}>
@@ -219,9 +219,9 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 </Box>
               </Box>
             )} */}
-            
+
             {/* Comments (if available) */}
-            {item.Comments && item.Comments.length > 0 && (
+            {item.Comments && Array.isArray(item.Comments) && item.Comments.length > 0 && (
               <Box sx={{ width: '100%', p: 1 }}>
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -234,14 +234,14 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
               </Box>
             )}
           </Box>
-          
+
           {/* Location and Contact Details (if available) */}
           {hasDetails && (
             <Paper variant="outlined" sx={{ p: 2, mt: 2, mb: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 Merchant Details
               </Typography>
-              
+
               {item.Details?.Address && (
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
                   <PlaceIcon fontSize="small" sx={{ mr: 1, mt: 0.3, color: theme.palette.text.secondary }} />
@@ -250,7 +250,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                   </Typography>
                 </Box>
               )}
-              
+
               {item.Details?.Phone && (
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <PhoneIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
@@ -261,7 +261,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
               )}
             </Paper>
           )}
-          
+
           {/* Transaction Flags */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
             {item.PendingTransaction && (
@@ -271,7 +271,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 size="small"
               />
             )}
-            
+
             {item.IsRecurringTransaction && (
               <Chip
                 icon={<RepeatIcon />}
@@ -280,7 +280,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 size="small"
               />
             )}
-            
+
             {item.IsCashWithdrawal && (
               <Chip
                 icon={<AttachMoneyIcon />}
@@ -289,7 +289,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 size="small"
               />
             )}
-            
+
             {item.IsCardPresent && (
               <Chip
                 icon={<CreditCardIcon />}
@@ -298,7 +298,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
                 size="small"
               />
             )}
-            
+
             {item.IsAbroadTransaction && (
               <Chip
                 icon={<FlightIcon />}
@@ -315,7 +315,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* JSON Data Dialog */}
       <Dialog
         open={jsonDialogOpen}
@@ -330,11 +330,11 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
           </Typography>
         </DialogTitle>
         <DialogContent>
-          <Paper 
-            variant="outlined" 
-            sx={{ 
-              p: 2, 
-              fontFamily: 'monospace', 
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2,
+              fontFamily: 'monospace',
               fontSize: '0.875rem',
               whiteSpace: 'pre-wrap',
               overflowX: 'auto',
@@ -346,7 +346,7 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseJsonDialog}>Close</Button>
-          <Button 
+          <Button
             onClick={() => {
               navigator.clipboard.writeText(JSON.stringify(item, null, 2));
             }}

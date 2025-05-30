@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  IconButton, 
-  Typography, 
-  Box, 
-  List, 
-  ListItem, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  IconButton,
+  Typography,
+  Box,
+  List,
+  ListItem,
   Divider,
   useTheme,
   alpha,
@@ -42,14 +42,14 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
   const color = getCategoryColor(category, theme);
   const currency = items.length > 0 ? items[0].Currency : 'NIS';
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  
+
   // Group items by name
   const groupedByName = React.useMemo(() => {
     const groups: Record<string, NameGroup> = {};
-    
+
     items.forEach(item => {
       const name = item.DisplayName || item.Name;
-      
+
       if (!groups[name]) {
         groups[name] = {
           name,
@@ -57,19 +57,19 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
           totalAmount: 0
         };
       }
-      
+
       groups[name].items.push(item);
       groups[name].totalAmount += item.Amount;
     });
-    
+
     // Convert to array and sort by absolute total amount (highest first)
     return Object.values(groups)
       .sort((a, b) => Math.abs(b.totalAmount) - Math.abs(a.totalAmount));
   }, [items]);
-  
+
   // Calculate total for this category
   const totalAmount = items.reduce((sum, item) => sum + item.Amount, 0);
-  
+
   const handleGroupToggle = (groupName: string) => {
     setExpandedGroups(prev => ({
       ...prev,
@@ -78,24 +78,24 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={onClose}
       fullWidth
       maxWidth="sm"
     >
-      <DialogTitle sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <DialogTitle sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         borderBottom: `1px solid ${theme.palette.divider}`,
         pb: 1
       }}>
         <Box display="flex" alignItems="center">
-          <Box 
-            sx={{ 
-              width: 40, 
-              height: 40, 
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
               borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
@@ -122,11 +122,11 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
         <List disablePadding>
           {groupedByName.map((group, groupIndex) => {
             const isExpanded = expandedGroups[group.name] || false;
-            
+
             return (
               <React.Fragment key={group.name}>
-                <ListItem 
-                  sx={{ 
+                <ListItem
+                  sx={{
                     py: 1.5,
                     px: 2,
                     display: 'flex',
@@ -142,8 +142,8 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                 >
                   <Box width="100%" display="flex" justifyContent="space-between" alignItems="center">
                     <Box display="flex" alignItems="center">
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                         sx={{ mr: 1, p: 0 }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -156,9 +156,9 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                         {group.name}
                       </Typography>
                       {group.items.length > 1 && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
+                        <Typography
+                          variant="caption"
+                          sx={{
                             bgcolor: theme.palette.action.selected,
                             borderRadius: '50%',
                             width: 20,
@@ -173,8 +173,8 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                         </Typography>
                       )}
                     </Box>
-                    <Typography 
-                      variant="body1" 
+                    <Typography
+                      variant="body1"
                       fontWeight="medium"
                       color={group.totalAmount >= 0 ? theme.palette.success.main : theme.palette.error.main}
                     >
@@ -182,13 +182,13 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                     </Typography>
                   </Box>
                 </ListItem>
-                
+
                 <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                   <List disablePadding>
                     {group.items.map((item, itemIndex) => (
                       <React.Fragment key={item.id}>
-                        <ListItem 
-                          sx={{ 
+                        <ListItem
+                          sx={{
                             py: 1,
                             px: 4,
                             display: 'flex',
@@ -199,21 +199,21 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                         >
                           <Box width="100%" display="flex" justifyContent="space-between" alignItems="flex-start">
                             <Typography variant="caption" color="text.secondary">
-                              {new Date(item.Date).toLocaleDateString('en-IL', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
+                              {new Date(item.Date).toLocaleDateString('en-IL', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
                               })}
                             </Typography>
-                            <Typography 
-                              variant="body2" 
+                            <Typography
+                              variant="body2"
                               fontWeight="medium"
                               color={item.Amount >= 0 ? theme.palette.success.main : theme.palette.error.main}
                             >
                               {item.Amount >= 0 ? '+' : ''}{formatCurrency(item.Amount, currency)}
                             </Typography>
                           </Box>
-                          {item.Comments && item.Comments.length > 0 && (
+                          {item.Comments && Array.isArray(item.Comments) && item.Comments.length > 0 && (
                             <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                               {item.Comments.join(' · ')}
                             </Typography>
@@ -226,7 +226,7 @@ export const CategoryItemsDialog: React.FC<CategoryItemsDialogProps> = ({
                     ))}
                   </List>
                 </Collapse>
-                
+
                 {groupIndex < groupedByName.length - 1 && (
                   <Divider component="li" />
                 )}
