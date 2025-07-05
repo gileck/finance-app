@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Alert } from '@mui/material';
+import { Box, Alert, Paper, Typography, IconButton, Stack } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { getCardItems, getMonthlyTotals } from '@/apis/cardItems/client';
 import { CardItem, MonthlyTotal } from '@/apis/cardItems/types';
 import { CurrentMonthSpending } from './CurrentMonthSpending';
@@ -9,6 +10,7 @@ import { RecentExpenses } from './RecentExpenses';
 import { CategoryPieChart } from './CategoryPieChart';
 import { RecurringTransactions } from './RecurringTransactions';
 import { PendingItems } from './PendingItems';
+import { UncategorizedItems } from './UncategorizedItems';
 
 export const Dashboard: React.FC = () => {
   const [cardItems, setCardItems] = useState<CardItem[]>([]);
@@ -17,18 +19,96 @@ export const Dashboard: React.FC = () => {
   const [loadingTotals, setLoadingTotals] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Get current month's card items
+  // Month/Year selection state
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return now.getMonth() + 1; // JavaScript months are 0-indexed
+  });
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const now = new Date();
+    return now.getFullYear();
+  });
+
+  // Navigation functions
+  const goToNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  const goToPrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
+  };
+
+  // Check if we can navigate
+  const canGoNext = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    return !(selectedMonth === currentMonth && selectedYear === currentYear);
+  }, [selectedMonth, selectedYear]);
+
+  const canGoPrev = useMemo(() => {
+    if (monthlyTotals.length === 0) return false;
+
+    // Find the earliest month we have data for
+    const sortedTotals = [...monthlyTotals].sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return parseInt(a.month) - parseInt(b.month);
+    });
+
+    if (sortedTotals.length === 0) return false;
+
+    const earliestMonth = sortedTotals[0];
+    const earliestMonthNum = parseInt(earliestMonth.month);
+
+    return !(selectedMonth === earliestMonthNum && selectedYear === earliestMonth.year);
+  }, [selectedMonth, selectedYear, monthlyTotals]);
+
+  // Format selected month for display
+  const formatSelectedMonth = () => {
+    const date = new Date(selectedYear, selectedMonth - 1, 1);
+    return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  };
+
+  // Handle item update (for category changes, etc.)
+  const handleItemUpdate = (updatedItem: CardItem) => {
+    setCardItems(prev => {
+      const newItems = prev.map(item =>
+        item.id === updatedItem.id ? updatedItem : item
+      );
+      return newItems;
+    });
+  };
+
+  // Handle batch item update (for multiple category changes at once)
+  const handleBatchItemUpdate = (updatedItems: CardItem[]) => {
+    setCardItems(prev => {
+      const updatedItemsMap = new Map(updatedItems.map(item => [item.id, item]));
+      const newItems = prev.map(item =>
+        updatedItemsMap.has(item.id) ? updatedItemsMap.get(item.id)! : item
+      );
+      return newItems;
+    });
+  };
+
+  // Get card items for selected month
   useEffect(() => {
-    const fetchCurrentMonthItems = async () => {
+    const fetchMonthItems = async () => {
       setLoadingItems(true);
       try {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-
-        // Create date range for the current month
-        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+        // Create date range for the selected month
+        const startDate = new Date(selectedYear, selectedMonth - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
 
         const response = await getCardItems({
           filter: {
@@ -49,8 +129,8 @@ export const Dashboard: React.FC = () => {
       }
     };
 
-    fetchCurrentMonthItems();
-  }, []);
+    fetchMonthItems();
+  }, [selectedMonth, selectedYear]);
 
   // Get monthly totals
   useEffect(() => {
@@ -59,7 +139,7 @@ export const Dashboard: React.FC = () => {
       try {
         const response = await getMonthlyTotals({
           pagination: {
-            limit: 12 // Get the last 12 months
+            limit: 24 // Get the last 24 months for better navigation
           }
         });
 
@@ -84,53 +164,99 @@ export const Dashboard: React.FC = () => {
     fetchMonthlyTotals();
   }, []);
 
-  // Calculate average monthly spending (excluding current month)
+  // Calculate average monthly spending (excluding selected month)
   const averageMonthlySpending = useMemo(() => {
     if (monthlyTotals.length <= 1) return null;
 
-    // Skip the current month (index 0) and calculate average of previous months
-    const previousMonths = monthlyTotals.slice(1);
-    if (previousMonths.length === 0) return null;
+    // Filter out the selected month and calculate average of other months
+    const otherMonths = monthlyTotals.filter(month =>
+      !(parseInt(month.month) === selectedMonth && month.year === selectedYear)
+    );
 
-    const sum = previousMonths.reduce((acc, month) => acc + month.total, 0);
-    return sum / previousMonths.length;
-  }, [monthlyTotals]);
+    if (otherMonths.length === 0) return null;
 
-  // Get current month data
-  const currentMonth = monthlyTotals.length > 0 ? monthlyTotals[0] : null;
+    const sum = otherMonths.reduce((acc, month) => acc + month.total, 0);
+    return sum / otherMonths.length;
+  }, [monthlyTotals, selectedMonth, selectedYear]);
+
+  // Get selected month data
+  const selectedMonthData = monthlyTotals.find(month =>
+    parseInt(month.month) === selectedMonth && month.year === selectedYear
+  ) || null;
 
   return (
-    <Box sx={{ width: '100%', mb: 4 }}>
+    <Box sx={{ width: '100%', mb: { xs: 2, sm: 4 }, px: { xs: 1, sm: 0 } }}>
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, mx: { xs: 1, sm: 0 } }}>
           {error}
         </Alert>
       )}
 
-      {/* <Typography 
-        variant="h4" 
-        component="h1" 
-        gutterBottom 
-        sx={{ 
-          mb: 3, 
-          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.25rem' } 
-        }}
-      >
-        Financial Dashboard
-      </Typography> */}
+      {/* Month Navigation */}
+      <Paper elevation={2} sx={{ p: { xs: 2, sm: 2.5 }, mb: 3, borderRadius: 3 }}>
+        <Stack direction="row" alignItems="center" justifyContent="center">
+          <IconButton
+            onClick={goToPrevMonth}
+            disabled={!canGoPrev}
+            size="large"
+            sx={{
+              '&:disabled': {
+                opacity: 0.3
+              },
+              minWidth: 48,
+              minHeight: 48,
+              p: 1.5,
+              mr: { xs: 1, sm: 2 }
+            }}
+          >
+            <ChevronLeft fontSize="large" />
+          </IconButton>
+
+          <Typography
+            variant="h5"
+            component="h1"
+            sx={{
+              textAlign: 'center',
+              fontWeight: 600,
+              fontSize: { xs: '1.5rem', sm: '2rem' },
+              px: { xs: 1, sm: 2 },
+              color: 'primary.main'
+            }}
+          >
+            {formatSelectedMonth()}
+          </Typography>
+
+          <IconButton
+            onClick={goToNextMonth}
+            disabled={!canGoNext}
+            size="large"
+            sx={{
+              '&:disabled': {
+                opacity: 0.3
+              },
+              minWidth: 48,
+              minHeight: 48,
+              p: 1.5,
+              ml: { xs: 1, sm: 2 }
+            }}
+          >
+            <ChevronRight fontSize="large" />
+          </IconButton>
+        </Stack>
+      </Paper>
 
       <Box sx={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: 3
+        gap: { xs: 2, sm: 3 }
       }}>
         {/* Current Month Spending */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <CurrentMonthSpending
-            currentMonth={currentMonth}
+            currentMonth={selectedMonthData}
             averageSpending={averageMonthlySpending}
             loading={loadingTotals}
           />
@@ -139,7 +265,7 @@ export const Dashboard: React.FC = () => {
         {/* Recent Expenses (48h) */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <RecentExpenses
             items={cardItems}
@@ -154,12 +280,13 @@ export const Dashboard: React.FC = () => {
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        mb: 3
+        mb: { xs: 1, sm: 3 },
+        gap: { xs: 2, sm: 0 }
       }}>
         {/* Top Spendings List */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <TopSpendingsList
             items={cardItems}
@@ -171,7 +298,7 @@ export const Dashboard: React.FC = () => {
         {/* Top Categories List */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <TopCategoriesList
             items={cardItems}
@@ -186,12 +313,13 @@ export const Dashboard: React.FC = () => {
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        mb: 3
+        mb: { xs: 1, sm: 3 },
+        gap: { xs: 2, sm: 0 }
       }}>
         {/* Recurring Transactions */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <RecurringTransactions limit={10} />
         </Box>
@@ -199,7 +327,7 @@ export const Dashboard: React.FC = () => {
         {/* Category Pie Chart */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <CategoryPieChart
             items={cardItems}
@@ -213,16 +341,31 @@ export const Dashboard: React.FC = () => {
         display: 'flex',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        mb: 3
+        mb: { xs: 1, sm: 3 },
+        gap: { xs: 2, sm: 0 }
       }}>
         {/* Pending Items */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
-          mb: { xs: 3, md: 0 }
+          mb: { xs: 1, md: 0 }
         }}>
           <PendingItems
             items={cardItems}
             loading={loadingItems}
+          />
+        </Box>
+
+        {/* Uncategorized Items */}
+        <Box sx={{
+          width: { xs: '100%', md: 'calc(50% - 12px)' },
+          mb: { xs: 1, md: 0 }
+        }}>
+          <UncategorizedItems
+            items={cardItems}
+            loading={loadingItems}
+            limit={10}
+            onItemUpdate={handleItemUpdate}
+            onBatchItemUpdate={handleBatchItemUpdate}
           />
         </Box>
       </Box>

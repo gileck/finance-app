@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  Paper, 
-  Typography, 
+import {
+  Paper,
+  Typography,
   Box,
   List,
   ListItem,
@@ -12,7 +12,7 @@ import {
   ListItemSecondaryAction,
   ListItemButton
 } from '@mui/material';
-import { 
+import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon
 } from '@mui/icons-material';
@@ -43,15 +43,28 @@ type GroupedItems = Record<string, ItemGroup>;
 
 // Helper to format currency
 const formatCurrency = (amount: number, currency: string): string => {
+  // Convert currency symbols to ISO codes
+  const currencyMap: Record<string, string> = {
+    '$': 'USD',
+    '€': 'EUR',
+    '£': 'GBP',
+    '¥': 'JPY',
+    '₪': 'ILS',
+    'NIS': 'ILS'
+  };
+
   // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS') {
+  if (currency === 'NIS' || currency === '₪') {
     return `₪${amount.toFixed(2)}`;
   }
-  
+
+  // Convert symbol to ISO code if needed
+  const isoCode = currencyMap[currency] || currency || 'USD';
+
   // For other currencies, use the Intl formatter
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency || 'USD'
+    currency: isoCode
   }).format(amount);
 };
 
@@ -89,11 +102,11 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
   // Group items by name within a category
   const groupItemsByName = (items: CardItem[]): GroupedItems => {
     const grouped: GroupedItems = {};
-    
+
     items.forEach(item => {
       const name = item.Name;
       const key = name.toLowerCase().replace(/\s+/g, '_');
-      
+
       if (!grouped[key]) {
         grouped[key] = {
           name,
@@ -103,12 +116,12 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
           count: 0
         };
       }
-      
+
       grouped[key].items.push(item);
       grouped[key].total += item.Amount;
       grouped[key].count += 1;
     });
-    
+
     return grouped;
   };
 
@@ -116,11 +129,11 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
   const calculateCategoryTotals = (): CategoryTotal[] => {
     const categories: Record<string, CategoryTotal> = {};
     let grandTotal = 0;
-    
+
     // First pass: calculate totals per category and grand total
     Object.values(cardItems).forEach(item => {
       const { Category, Amount } = item;
-      
+
       if (!categories[Category]) {
         categories[Category] = {
           category: Category,
@@ -131,13 +144,13 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
           groupedItems: {}
         };
       }
-      
+
       categories[Category].total += Amount;
       categories[Category].count += 1;
       categories[Category].items.push(item);
       grandTotal += Amount;
     });
-    
+
     // Second pass: calculate percentages and group items
     if (grandTotal > 0) {
       Object.values(categories).forEach(category => {
@@ -145,24 +158,24 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
         category.groupedItems = groupItemsByName(category.items);
       });
     }
-    
+
     // Sort by total (descending)
     return Object.values(categories).sort((a, b) => b.total - a.total);
   };
-  
+
   const categoryTotals = calculateCategoryTotals();
   const currency = Object.values(cardItems)[0]?.Currency || 'NIS';
-  
+
   if (categoryTotals.length === 0) {
     return null;
   }
-  
+
   return (
     <Paper elevation={2} sx={{ mb: 4 }}>
       <List disablePadding>
         {categoryTotals.map((category, index) => {
           const isExpanded = !!expandedCategories[category.category];
-          
+
           return (
             <React.Fragment key={category.category}>
               <ListItem disablePadding>
@@ -181,7 +194,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                       <Typography variant="subtitle1" fontWeight="medium">
                         {category.category}
                       </Typography>
-                      <Chip 
+                      <Chip
                         label={`${category.count} items`}
                         size="small"
                         variant="outlined"
@@ -200,19 +213,19 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                   </Box>
                 </ListItemButton>
               </ListItem>
-              
+
               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   {Object.entries(category.groupedItems).map(([groupKey, group], groupIndex) => {
                     const isGroupExpanded = !!expandedGroups[`${category.category}_${groupKey}`];
                     const groupFullKey = `${category.category}_${groupKey}`;
                     const isLastGroup = groupIndex === Object.keys(category.groupedItems).length - 1;
-                    
+
                     return (
                       <React.Fragment key={groupKey}>
-                        <ListItem 
-                          sx={{ 
-                            py: 1.5, 
+                        <ListItem
+                          sx={{
+                            py: 1.5,
                             px: 4,
                             bgcolor: 'action.hover',
                             display: 'flex',
@@ -227,7 +240,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                               <Typography variant="body1" fontWeight="medium">
                                 {group.displayName}
                               </Typography>
-                              <Chip 
+                              <Chip
                                 label={`${group.count}x`}
                                 size="small"
                                 color="primary"
@@ -243,16 +256,16 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                             {isGroupExpanded ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
                           </Box>
                         </ListItem>
-                        
+
                         <Divider variant="inset" component="li" sx={{ ml: 4 }} />
-                        
+
                         <Collapse in={isGroupExpanded} timeout="auto" unmountOnExit>
                           <List component="div" disablePadding>
                             {group.items.map((item, itemIndex) => (
                               <React.Fragment key={item.id}>
-                                <ListItem 
-                                  sx={{ 
-                                    py: 1, 
+                                <ListItem
+                                  sx={{
+                                    py: 1,
                                     px: 6,
                                     bgcolor: 'background.paper'
                                   }}
@@ -277,7 +290,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                             ))}
                           </List>
                         </Collapse>
-                        
+
                         {!isLastGroup && (
                           <Divider component="li" sx={{ ml: 0 }} />
                         )}
@@ -286,7 +299,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
                   })}
                 </List>
               </Collapse>
-              
+
               {index < categoryTotals.length - 1 && <Divider />}
             </React.Fragment>
           );

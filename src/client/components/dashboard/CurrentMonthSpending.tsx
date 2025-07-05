@@ -5,26 +5,13 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { MonthlyTotal } from '@/apis/cardItems/types';
 import { DashboardCard } from './DashboardCard';
+import { formatCurrency } from '@/client/utils/categoryUtils';
 
 interface CurrentMonthSpendingProps {
   currentMonth: MonthlyTotal | null;
   averageSpending: number | null;
   loading: boolean;
 }
-
-// Helper to format currency
-const formatCurrency = (amount: number, currency: string): string => {
-  // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS') {
-    return `₪${Math.round(amount)}`;
-  }
-  
-  // For other currencies, use the Intl formatter
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD'
-  }).format(amount);
-};
 
 export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
   currentMonth,
@@ -35,8 +22,8 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
 
   if (loading) {
     return (
-      <DashboardCard 
-        title="Current Month Spending" 
+      <DashboardCard
+        title="Selected Month Spending"
         icon={<AccountBalanceWalletIcon />}
         color="primary"
       >
@@ -49,8 +36,8 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
 
   if (!currentMonth || averageSpending === null) {
     return (
-      <DashboardCard 
-        title="Current Month Spending" 
+      <DashboardCard
+        title="Selected Month Spending"
         icon={<AccountBalanceWalletIcon />}
         color="primary"
       >
@@ -69,16 +56,16 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
   const cardColor = isAboveAverage ? 'error' : 'success';
 
   return (
-    <DashboardCard 
-      title="Current Month Spending" 
+    <DashboardCard
+      title="Selected Month Spending"
       icon={<AccountBalanceWalletIcon />}
       color={cardColor}
     >
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
         height="100%"
         minHeight={150}
         sx={{
@@ -98,10 +85,10 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
           }
         }}
       >
-        <Typography 
-          variant="h3" 
-          component="p" 
-          sx={{ 
+        <Typography
+          variant="h3"
+          component="p"
+          sx={{
             fontWeight: 'bold',
             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
             mb: 2,
@@ -110,9 +97,9 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
         >
           {formatCurrency(currentMonth.total, currentMonth.currency)}
         </Typography>
-        
-        <Box 
-          display="flex" 
+
+        <Box
+          display="flex"
           alignItems="center"
           sx={{
             color: theme.palette[cardColor].main,
@@ -128,10 +115,10 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
           ) : (
             <ArrowDownwardIcon fontSize="small" sx={{ mr: 0.5 }} />
           )}
-          <Typography 
-            variant="body1" 
-            component="span" 
-            sx={{ 
+          <Typography
+            variant="body1"
+            component="span"
+            sx={{
               fontWeight: 'medium',
               fontSize: { xs: '0.875rem', sm: '1rem' }
             }}
@@ -139,13 +126,13 @@ export const CurrentMonthSpending: React.FC<CurrentMonthSpendingProps> = ({
             {percentDifference}% {isAboveAverage ? 'above' : 'below'} average
           </Typography>
         </Box>
-        
-        <Typography 
-          variant="body2" 
-          color="text.secondary" 
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
           mt={2}
           textAlign="center"
-          sx={{ 
+          sx={{
             fontSize: { xs: '0.75rem', sm: '0.875rem' },
             zIndex: 1
           }}
