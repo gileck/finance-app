@@ -1,14 +1,15 @@
 import React from 'react';
-import { 
-  Paper, 
-  Box, 
-  Typography, 
+import {
+  Paper,
+  Box,
+  Typography,
   Divider,
   Chip,
   List,
   ListItem
 } from '@mui/material';
 import { MonthlyTotal } from '@/apis/cardItems/types';
+import { formatCurrency } from '@/client/utils/categoryUtils';
 import { useRouter } from '@/client/router';
 
 // Define valid color options for MUI Chip
@@ -20,19 +21,7 @@ interface MonthlyTotalsListProps {
   setMonthRef?: (monthKey: string, element: HTMLDivElement | null) => void;
 }
 
-// Helper to format currency
-const formatCurrency = (amount: number, currency: string): string => {
-  // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS') {
-    return `₪${amount.toFixed(2)}`;
-  }
-  
-  // For other currencies, use the Intl formatter
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD'
-  }).format(amount);
-};
+// removed local currency formatter in favor of shared NIS formatter
 
 // Helper to format percentage
 const formatPercentage = (value: number): string => {
@@ -48,10 +37,10 @@ const getPercentageColor = (percentage: number): ChipColorType => {
   return 'default';
 };
 
-export const MonthlyTotalsList: React.FC<MonthlyTotalsListProps> = ({ 
+export const MonthlyTotalsList: React.FC<MonthlyTotalsListProps> = ({
   monthlyTotals,
   average,
-  setMonthRef 
+  setMonthRef
 }) => {
   const router = useRouter();
 
@@ -75,15 +64,15 @@ export const MonthlyTotalsList: React.FC<MonthlyTotalsListProps> = ({
       <List disablePadding>
         {monthlyTotals.map((monthlyTotal, index) => {
           const monthKey = `${monthlyTotal.year}-${monthlyTotal.month}`;
-          
+
           // Calculate percentage from average
-          const percentageFromAverage = average > 0 
-            ? ((monthlyTotal.total - average) / average) * 100 
+          const percentageFromAverage = average > 0
+            ? ((monthlyTotal.total - average) / average) * 100
             : 0;
-          
+
           // Determine color based on percentage
           const percentageColor = getPercentageColor(percentageFromAverage);
-          
+
           return (
             <React.Fragment key={monthKey}>
               <Box
@@ -107,11 +96,11 @@ export const MonthlyTotalsList: React.FC<MonthlyTotalsListProps> = ({
                   {monthlyTotal.monthName}
                 </Typography>
                 <Box display="flex" alignItems="center" gap={2}>
-                  <Chip 
-                    label={formatPercentage(percentageFromAverage)} 
+                  <Chip
+                    label={formatPercentage(percentageFromAverage)}
                     color={percentageColor}
                     size="small"
-                    sx={{ 
+                    sx={{
                       fontWeight: 'bold',
                       minWidth: '70px'
                     }}

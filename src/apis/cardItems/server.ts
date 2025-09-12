@@ -97,7 +97,7 @@ const calculateMonthlyTotals = (
   }
 
   // Group items by month and year
-  const monthlyData: Record<string, { items: CardItem[], total: number, currency: string }> = {};
+  const monthlyData: Record<string, { items: CardItem[], totalNis: number }> = {};
 
   Object.values(filteredItems).forEach(item => {
     const date = new Date(item.Date);
@@ -108,13 +108,15 @@ const calculateMonthlyTotals = (
     if (!monthlyData[key]) {
       monthlyData[key] = {
         items: [],
-        total: 0,
-        currency: item.Currency // Assuming all items in a month have the same currency
+        totalNis: 0
       };
     }
 
     monthlyData[key].items.push(item);
-    monthlyData[key].total += item.Amount;
+    // Convert to NIS before aggregating
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { convertToNis } = require('@/common/currency');
+    monthlyData[key].totalNis += convertToNis(item.Amount, item.Currency);
   });
 
   // Convert to array of MonthlyTotal objects
@@ -130,8 +132,8 @@ const calculateMonthlyTotals = (
     return {
       month,
       year,
-      total: data.total,
-      currency: data.currency,
+      total: data.totalNis,
+      currency: 'NIS',
       monthName
     };
   });

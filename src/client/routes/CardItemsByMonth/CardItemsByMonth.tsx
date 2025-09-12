@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
+import {
+  Container,
+  Typography,
+  Box,
   CircularProgress,
   Snackbar,
   Alert,
@@ -18,6 +18,7 @@ import {
 import { getMonthlyTotals } from '@/apis/cardItems/client';
 import { MonthlyTotal } from '@/apis/cardItems/types';
 import { MonthlyTotalsList } from './MonthlyTotalsList';
+import { formatCurrency } from '@/client/utils/categoryUtils';
 
 export const CardItemsByMonth = () => {
   const [monthlyTotals, setMonthlyTotals] = useState<MonthlyTotal[]>([]);
@@ -38,22 +39,22 @@ export const CardItemsByMonth = () => {
   // Calculate statistics for the last 12 months
   const calculateStats = (totals: MonthlyTotal[]) => {
     if (totals.length === 0) return { average: 0, median: 0 };
-    
+
     // Get last 12 months or all if less than 12
     const last12Months = totals.slice(0, Math.min(12, totals.length));
     const values = last12Months.map(item => item.total);
-    
+
     // Calculate average
     const sum = values.reduce((acc, val) => acc + val, 0);
     const average = sum / values.length;
-    
+
     // Calculate median
     const sortedValues = [...values].sort((a, b) => a - b);
     const middle = Math.floor(sortedValues.length / 2);
     const median = sortedValues.length % 2 === 0
       ? (sortedValues[middle - 1] + sortedValues[middle]) / 2
       : sortedValues[middle];
-    
+
     return { average, median };
   };
 
@@ -70,7 +71,7 @@ export const CardItemsByMonth = () => {
         setError(response.data.error);
       } else {
         setMonthlyTotals(response.data.monthlyTotals);
-        
+
         // Set categories if available
         if (response.data.categories) {
           setCategories(response.data.categories);
@@ -134,7 +135,7 @@ export const CardItemsByMonth = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           Monthly Totals
         </Typography>
-        
+
         {/* Category Filter */}
         <Box mt={2} mb={3} display="flex" alignItems="center">
           <FormControl sx={{ minWidth: 200, mr: 2 }}>
@@ -173,15 +174,7 @@ export const CardItemsByMonth = () => {
               <Typography variant="subtitle2" color="text.secondary">
                 Average Monthly Spend
               </Typography>
-              <Typography variant="h5">
-                {monthlyTotals[0]?.currency === 'NIS' 
-                  ? `₪${stats.average.toFixed(2)}` 
-                  : new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: monthlyTotals[0]?.currency || 'USD'
-                    }).format(stats.average)
-                }
-              </Typography>
+              <Typography variant="h5">{formatCurrency(stats.average, 'NIS')}</Typography>
             </Box>
             <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />
             <Divider sx={{ display: { xs: 'block', sm: 'none' } }} />
@@ -189,30 +182,22 @@ export const CardItemsByMonth = () => {
               <Typography variant="subtitle2" color="text.secondary">
                 Median Monthly Spend
               </Typography>
-              <Typography variant="h5">
-                {monthlyTotals[0]?.currency === 'NIS' 
-                  ? `₪${stats.median.toFixed(2)}` 
-                  : new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: monthlyTotals[0]?.currency || 'USD'
-                    }).format(stats.median)
-                }
-              </Typography>
+              <Typography variant="h5">{formatCurrency(stats.median, 'NIS')}</Typography>
             </Box>
           </Box>
         </Paper>
       )}
 
       {/* Monthly Totals List */}
-      <MonthlyTotalsList 
+      <MonthlyTotalsList
         monthlyTotals={monthlyTotals}
         average={stats.average}
       />
 
       {/* Snackbar for notifications */}
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={6000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

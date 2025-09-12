@@ -121,21 +121,16 @@ export const getCategoryColor = (category: string, _theme?: Theme): string => {
  * @returns Formatted currency string
  */
 export const formatCurrency = (amount: number, currency: string): string => {
-  // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS') {
-    return `₪${Math.round(amount)}`;
+  // Always format and present in NIS regardless of input currency
+  try {
+    // Lazy import to avoid circular deps in some bundlers
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { convertToNis, formatNis } = require('@/common/currency');
+    const nisAmount = convertToNis(Number(amount) || 0, currency || 'NIS');
+    return formatNis(nisAmount);
+  } catch (_e) {
+    // Fallback simple formatting in case of unexpected import issues
+    const rounded = Math.round(Number(amount) || 0);
+    return `₪${rounded.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
   }
-
-  // If currency is $ symbol, use USD code
-  if (currency === '$') {
-    return `$${Math.round(amount)}`;
-  }
-
-  // For other currencies, use the Intl formatter
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
 };

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  List, 
-  ListItem, 
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
   CircularProgress,
   Divider,
   useTheme,
@@ -14,6 +14,7 @@ import { CardItem } from '@/apis/cardItems/types';
 import { DashboardCard } from './DashboardCard';
 import CategoryIcon from '@mui/icons-material/Category';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
+import { convertToNis } from '@/common/currency';
 import { CategoryItemsDialog } from './CategoryItemsDialog';
 
 interface TopCategoriesListProps {
@@ -36,16 +37,16 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
 }) => {
   const theme = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   // Calculate totals by category
   const calculateCategoryTotals = (): CategoryTotal[] => {
     const categories: Record<string, CategoryTotal> = {};
     let grandTotal = 0;
-    
+
     // First pass: calculate totals per category and grand total
     items.forEach(item => {
-      const { Category, Amount } = item;
-      
+      const { Category, Amount, Currency } = item;
+
       if (!categories[Category]) {
         categories[Category] = {
           name: Category,
@@ -54,19 +55,19 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
           count: 0
         };
       }
-      
-      categories[Category].total += Amount;
+
+      categories[Category].total += convertToNis(Amount, Currency);
       categories[Category].count += 1;
-      grandTotal += Amount;
+      grandTotal += convertToNis(Amount, Currency);
     });
-    
+
     // Second pass: calculate percentages
     if (grandTotal > 0) {
       Object.values(categories).forEach(category => {
         category.percentage = (category.total / grandTotal) * 100;
       });
     }
-    
+
     // Sort by total (descending) and take top categories
     return Object.values(categories)
       .sort((a, b) => b.total - a.total)
@@ -74,12 +75,12 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
   };
 
   const categoryTotals = calculateCategoryTotals();
-  const currency = items.length > 0 ? items[0].Currency : 'NIS';
+  const currency = 'NIS';
 
   if (loading) {
     return (
-      <DashboardCard 
-        title="Top Categories" 
+      <DashboardCard
+        title="Top Categories"
         icon={<CategoryIcon />}
         color="primary"
       >
@@ -92,8 +93,8 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
 
   if (categoryTotals.length === 0) {
     return (
-      <DashboardCard 
-        title="Top Categories" 
+      <DashboardCard
+        title="Top Categories"
         icon={<CategoryIcon />}
         color="primary"
       >
@@ -110,8 +111,8 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
   const maxTotal = Math.max(...categoryTotals.map(cat => cat.total));
 
   return (
-    <DashboardCard 
-      title="Top Categories" 
+    <DashboardCard
+      title="Top Categories"
       icon={<CategoryIcon />}
       color="primary"
     >
@@ -119,11 +120,11 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
         {categoryTotals.map((category, index) => {
           const color = getCategoryColor(category.name, theme);
           const progressPercentage = (category.total / maxTotal) * 100;
-          
+
           return (
             <React.Fragment key={category.name}>
-              <ListItem 
-                sx={{ 
+              <ListItem
+                sx={{
                   py: 1.5,
                   px: 1,
                   display: 'flex',
@@ -138,10 +139,10 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
                 onClick={() => setSelectedCategory(category.name)}
               >
                 <Box width="100%" display="flex" alignItems="center" mb={0.5}>
-                  <Box 
-                    sx={{ 
-                      width: 32, 
-                      height: 32, 
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
                       borderRadius: '8px',
                       display: 'flex',
                       alignItems: 'center',
@@ -155,18 +156,18 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
                   </Box>
                   <Box flexGrow={1}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
+                      <Typography
+                        variant="body1"
+                        sx={{
                           fontWeight: 'medium',
                           fontSize: { xs: '0.875rem', sm: '0.95rem' }
                         }}
                       >
                         {category.name}
                       </Typography>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
+                      <Typography
+                        variant="body2"
+                        sx={{
                           fontWeight: 'bold',
                           fontSize: { xs: '0.875rem', sm: '0.95rem' }
                         }}
@@ -176,11 +177,11 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
                       <Box width="100%" mr={2}>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={progressPercentage} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={progressPercentage}
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
                             backgroundColor: alpha(color, 0.1),
                             '& .MuiLinearProgress-bar': {
@@ -190,13 +191,13 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
                           }}
                         />
                       </Box>
-                      <Typography 
-                        variant="caption" 
+                      <Typography
+                        variant="caption"
                         color="text.secondary"
-                        sx={{ 
+                        sx={{
                           minWidth: '50px',
                           textAlign: 'right',
-                          fontSize: '0.75rem' 
+                          fontSize: '0.75rem'
                         }}
                       >
                         {category.percentage.toFixed(1)}%
@@ -212,7 +213,7 @@ export const TopCategoriesList: React.FC<TopCategoriesListProps> = ({
           );
         })}
       </List>
-      
+
       {/* Category Items Dialog */}
       {selectedCategory && (
         <CategoryItemsDialog

@@ -17,6 +17,8 @@ import {
   KeyboardArrowUp as KeyboardArrowUpIcon
 } from '@mui/icons-material';
 import { CardItem } from '@/apis/cardItems/types';
+import { convertToNis } from '@/common/currency';
+import { formatCurrency } from '@/client/utils/categoryUtils';
 
 interface CategoryBreakdownProps {
   cardItems: Record<string, CardItem>;
@@ -41,32 +43,7 @@ interface ItemGroup {
 
 type GroupedItems = Record<string, ItemGroup>;
 
-// Helper to format currency
-const formatCurrency = (amount: number, currency: string): string => {
-  // Convert currency symbols to ISO codes
-  const currencyMap: Record<string, string> = {
-    '$': 'USD',
-    '€': 'EUR',
-    '£': 'GBP',
-    '¥': 'JPY',
-    '₪': 'ILS',
-    'NIS': 'ILS'
-  };
-
-  // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS' || currency === '₪') {
-    return `₪${amount.toFixed(2)}`;
-  }
-
-  // Convert symbol to ISO code if needed
-  const isoCode = currencyMap[currency] || currency || 'USD';
-
-  // For other currencies, use the Intl formatter
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: isoCode
-  }).format(amount);
-};
+// removed local currency formatter in favor of shared NIS formatter
 
 // Helper to format date
 const formatDate = (dateString: string): string => {
@@ -118,7 +95,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
       }
 
       grouped[key].items.push(item);
-      grouped[key].total += item.Amount;
+      grouped[key].total += convertToNis(item.Amount, item.Currency);
       grouped[key].count += 1;
     });
 
@@ -145,10 +122,10 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
         };
       }
 
-      categories[Category].total += Amount;
+      categories[Category].total += convertToNis(Amount, item.Currency);
       categories[Category].count += 1;
       categories[Category].items.push(item);
-      grandTotal += Amount;
+      grandTotal += convertToNis(Amount, item.Currency);
     });
 
     // Second pass: calculate percentages and group items
@@ -164,7 +141,7 @@ export const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({ cardItems 
   };
 
   const categoryTotals = calculateCategoryTotals();
-  const currency = Object.values(cardItems)[0]?.Currency || 'NIS';
+  const currency = 'NIS';
 
   if (categoryTotals.length === 0) {
     return null;

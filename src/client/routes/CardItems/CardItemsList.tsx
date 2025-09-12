@@ -126,6 +126,21 @@ const calculateMonthTotal = (items: CardItem[]): { amount: number; currency: str
   };
 };
 
+// Helper: show original amount with its original currency (no conversion)
+const formatOriginalAmount = (amount: number, currency: string): string => {
+  const rawCurrency = currency || 'NIS';
+  // If already NIS/ILS, we won't usually show this secondary line but keep formatter simple
+  if (rawCurrency === '₪' || rawCurrency.toUpperCase() === 'NIS' || rawCurrency.toUpperCase() === 'ILS') {
+    return `₪${Math.round(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+  // Keep symbol when provided; otherwise show currency code before value
+  const symbolFirst = ['$', '€', '£', '¥', 'Rp', 'rp'];
+  if (symbolFirst.includes(rawCurrency)) {
+    return `${rawCurrency}${Math.round(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+  return `${Math.round(amount).toLocaleString(undefined, { maximumFractionDigits: 0 })} ${rawCurrency}`;
+};
+
 export const CardItemsList: React.FC<CardItemsListProps> = ({
   cardItems,
   onEditClick,
@@ -412,6 +427,15 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                               <Typography variant="body1" fontWeight="medium">
                                 {formatCurrency(item.Amount, item.Currency)}
                               </Typography>
+                              {item.Currency && item.Currency.toUpperCase() !== 'NIS' && item.Currency !== '₪' && (
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ lineHeight: 1, mt: 0.5 }}
+                                >
+                                  {formatOriginalAmount(item.Amount, item.Currency)}
+                                </Typography>
+                              )}
                               <Box mt={1}>
                                 <IconButton
                                   edge="end"

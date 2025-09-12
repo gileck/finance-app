@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
+import {
+  Box,
+  Typography,
   CircularProgress,
   useTheme,
   useMediaQuery,
   alpha,
   Stack
 } from '@mui/material';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
   Tooltip,
 } from 'recharts';
 import { CardItem } from '@/apis/cardItems/types';
 import { DashboardCard } from './DashboardCard';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
+import { convertToNis } from '@/common/currency';
 import { CategoryItemsDialog } from './CategoryItemsDialog';
 
 interface CategoryPieChartProps {
@@ -82,12 +83,12 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
 // Custom legend that shows top categories only
 const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryClick: (category: string) => void }) => {
   const theme = useTheme();
-  
+
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: 0.5, 
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0.5,
       width: '100%',
       maxHeight: '300px',
       overflowY: 'auto',
@@ -104,11 +105,11 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
       },
     }}>
       {payload.map((entry, index) => (
-        <Box 
-          key={`item-${index}`} 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+        <Box
+          key={`item-${index}`}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
             py: 0.5,
             px: 1,
             borderRadius: 1,
@@ -121,9 +122,9 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
           onClick={() => onCategoryClick(entry.value)}
         >
           <Box
-            sx={{ 
-              width: 24, 
-              height: 24, 
+            sx={{
+              width: 24,
+              height: 24,
               borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
@@ -136,9 +137,9 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
           >
             {getCategoryIcon(entry.value)}
           </Box>
-          <Typography 
-            variant="body2" 
-            sx={{ 
+          <Typography
+            variant="body2"
+            sx={{
               fontSize: { xs: '0.75rem', sm: '0.875rem' },
               flexGrow: 1,
               whiteSpace: 'nowrap',
@@ -149,9 +150,9 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
             {entry.value}
           </Typography>
           <Box display="flex" flexDirection="column" alignItems="flex-end">
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 fontWeight: 'medium',
                 color: theme.palette.text.primary,
@@ -160,9 +161,9 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
             >
               {formatCurrency(entry.amount, entry.currency)}
             </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{ 
+            <Typography
+              variant="caption"
+              sx={{
                 fontSize: '0.7rem',
                 color: theme.palette.text.secondary,
                 whiteSpace: 'nowrap'
@@ -184,16 +185,16 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  
+
   // Calculate totals by category
   const calculateCategoryTotals = (): CategoryTotal[] => {
     const categories: Record<string, CategoryTotal> = {};
     let grandTotal = 0;
-    
+
     // First pass: calculate totals per category and grand total
     items.forEach(item => {
-      const { Category, Amount } = item;
-      
+      const { Category, Amount, Currency } = item;
+
       if (!categories[Category]) {
         categories[Category] = {
           name: Category,
@@ -201,30 +202,31 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
           percentage: 0
         };
       }
-      
-      categories[Category].value += Amount;
-      grandTotal += Amount;
+
+      const nisAmount = convertToNis(Amount, Currency);
+      categories[Category].value += nisAmount;
+      grandTotal += nisAmount;
     });
-    
+
     // Second pass: calculate percentages
     if (grandTotal > 0) {
       Object.values(categories).forEach(category => {
         category.percentage = (category.value / grandTotal) * 100;
       });
     }
-    
+
     // Sort by value (descending)
     return Object.values(categories)
       .sort((a, b) => b.value - a.value);
   };
 
   const categoryTotals = calculateCategoryTotals();
-  const currency = items.length > 0 ? items[0].Currency : 'NIS';
+  const currency = 'NIS';
 
   if (loading) {
     return (
-      <DashboardCard 
-        title="Categories Breakdown" 
+      <DashboardCard
+        title="Categories Breakdown"
         icon={<PieChartIcon />}
         color="secondary"
       >
@@ -237,8 +239,8 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
 
   if (categoryTotals.length === 0) {
     return (
-      <DashboardCard 
-        title="Categories Breakdown" 
+      <DashboardCard
+        title="Categories Breakdown"
         icon={<PieChartIcon />}
         color="secondary"
       >
@@ -255,13 +257,13 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
   const legendItems = categoryTotals.slice(0, 15);
 
   return (
-    <DashboardCard 
-      title="Categories Breakdown" 
+    <DashboardCard
+      title="Categories Breakdown"
       icon={<PieChartIcon />}
       color="secondary"
       height={isMobile ? 'auto' : 380}
     >
-      <Box 
+      <Box
         sx={{
           position: 'relative',
           '&::before': {
@@ -292,10 +294,10 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
         {isMobile ? (
           <Stack spacing={2} sx={{ width: '100%' }}>
             {/* Chart */}
-            <Box 
-              height={200} 
-              display="flex" 
-              alignItems="center" 
+            <Box
+              height={200}
+              display="flex"
+              alignItems="center"
               justifyContent="center"
               sx={{ zIndex: 1 }}
             >
@@ -314,9 +316,9 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     onClick={(data) => setSelectedCategory(data.name)}
                   >
                     {categoryTotals.map((entry) => (
-                      <Cell 
-                        key={`cell-${entry.name}`} 
-                        fill={getCategoryColor(entry.name, theme)} 
+                      <Cell
+                        key={`cell-${entry.name}`}
+                        fill={getCategoryColor(entry.name, theme)}
                         style={{
                           filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
                           cursor: 'pointer'
@@ -328,22 +330,22 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                 </PieChart>
               </ResponsiveContainer>
             </Box>
-            
+
             {/* Legend */}
-            <Box 
-              display="flex" 
-              alignItems="flex-start" 
+            <Box
+              display="flex"
+              alignItems="flex-start"
               justifyContent="flex-start"
               sx={{ zIndex: 1 }}
             >
-              <CustomLegend 
+              <CustomLegend
                 payload={legendItems.map((item) => ({
                   value: item.name,
                   color: getCategoryColor(item.name, theme),
                   percentage: item.percentage,
                   amount: item.value,
                   currency
-                }))} 
+                }))}
                 onCategoryClick={setSelectedCategory}
               />
             </Box>
@@ -352,11 +354,11 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
           // For desktop, use side-by-side layout
           <Box display="flex" flexDirection="row" height="100%">
             {/* Chart */}
-            <Box 
-              width="50%" 
-              height="100%" 
-              display="flex" 
-              alignItems="center" 
+            <Box
+              width="50%"
+              height="100%"
+              display="flex"
+              alignItems="center"
               justifyContent="center"
               sx={{ zIndex: 1 }}
             >
@@ -375,9 +377,9 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     onClick={(data) => setSelectedCategory(data.name)}
                   >
                     {categoryTotals.map((entry) => (
-                      <Cell 
-                        key={`cell-${entry.name}`} 
-                        fill={getCategoryColor(entry.name, theme)} 
+                      <Cell
+                        key={`cell-${entry.name}`}
+                        fill={getCategoryColor(entry.name, theme)}
                         style={{
                           filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
                           cursor: 'pointer'
@@ -389,31 +391,31 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                 </PieChart>
               </ResponsiveContainer>
             </Box>
-            
+
             {/* Legend */}
-            <Box 
-              width="50%" 
-              display="flex" 
-              alignItems="flex-start" 
+            <Box
+              width="50%"
+              display="flex"
+              alignItems="flex-start"
               justifyContent="flex-start"
               height="100%"
               sx={{ zIndex: 1 }}
             >
-              <CustomLegend 
+              <CustomLegend
                 payload={legendItems.map((item) => ({
                   value: item.name,
                   color: getCategoryColor(item.name, theme),
                   percentage: item.percentage,
                   amount: item.value,
                   currency
-                }))} 
+                }))}
                 onCategoryClick={setSelectedCategory}
               />
             </Box>
           </Box>
         )}
       </Box>
-      
+
       {/* Category Items Dialog */}
       {selectedCategory && (
         <CategoryItemsDialog

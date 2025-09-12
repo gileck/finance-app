@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  Box, 
-  Typography, 
-  List, 
-  ListItem, 
-  ListItemText, 
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
   CircularProgress,
   Divider,
   useTheme,
@@ -12,6 +12,7 @@ import {
   Chip
 } from '@mui/material';
 import { MonthlyTotal } from '@/apis/cardItems/types';
+import { formatCurrency } from '@/client/utils/categoryUtils';
 import { DashboardCard } from './DashboardCard';
 import HistoryIcon from '@mui/icons-material/History';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -22,19 +23,7 @@ interface PreviousMonthsListProps {
   limit?: number;
 }
 
-// Helper to format currency
-const formatCurrency = (amount: number, currency: string): string => {
-  // For NIS currency, use the ₪ symbol
-  if (currency === 'NIS') {
-    return `₪${amount.toFixed(2)}`;
-  }
-  
-  // For other currencies, use the Intl formatter
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency || 'USD'
-  }).format(amount);
-};
+// removed local currency helper in favor of shared NIS formatter
 
 export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
   months,
@@ -47,8 +36,8 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
 
   if (loading) {
     return (
-      <DashboardCard 
-        title="Previous Months" 
+      <DashboardCard
+        title="Previous Months"
         icon={<HistoryIcon />}
         color="info"
       >
@@ -61,8 +50,8 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
 
   if (recentMonths.length === 0) {
     return (
-      <DashboardCard 
-        title="Previous Months" 
+      <DashboardCard
+        title="Previous Months"
         icon={<HistoryIcon />}
         color="info"
       >
@@ -76,8 +65,8 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
   }
 
   return (
-    <DashboardCard 
-      title="Previous Months" 
+    <DashboardCard
+      title="Previous Months"
       icon={<HistoryIcon />}
       color="info"
     >
@@ -86,7 +75,7 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
           const date = new Date(`${month.year}-${month.month}-01`);
           const monthName = date.toLocaleString('default', { month: 'long' });
           const yearNum = date.getFullYear();
-          
+
           // Generate a color based on the month (cycling through a few colors)
           const colorIndex = parseInt(month.month) % 5;
           const colors = [
@@ -97,12 +86,12 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
             theme.palette.info.main
           ];
           const color = colors[colorIndex];
-          
+
           return (
             <React.Fragment key={`${month.year}-${month.month}`}>
-              <ListItem 
-                disableGutters 
-                sx={{ 
+              <ListItem
+                disableGutters
+                sx={{
                   py: 1.5,
                   px: 1,
                   transition: 'all 0.2s',
@@ -112,10 +101,10 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
                   }
                 }}
               >
-                <Box 
-                  sx={{ 
-                    width: 40, 
-                    height: 40, 
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
                     borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -130,9 +119,9 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
                 <ListItemText
                   primary={
                     <Box display="flex" alignItems="center">
-                      <Typography 
-                        variant="body1" 
-                        sx={{ 
+                      <Typography
+                        variant="body1"
+                        sx={{
                           fontWeight: 'medium',
                           fontSize: { xs: '0.875rem', sm: '0.95rem' },
                           mr: 1
@@ -153,9 +142,9 @@ export const PreviousMonthsList: React.FC<PreviousMonthsListProps> = ({
                     </Box>
                   }
                 />
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
+                <Typography
+                  variant="body1"
+                  sx={{
                     fontWeight: 'bold',
                     color: theme.palette.text.primary,
                     fontSize: { xs: '0.875rem', sm: '0.95rem' }
