@@ -7,6 +7,7 @@ import { AIMonitoring } from './AIMonitoring';
 import { CardItems } from './CardItems';
 import { CardItemsByMonth } from './CardItemsByMonth';
 import { CardItemsByMonthDetail } from './CardItemsByMonthDetail';
+import { CardItemsMonthTable } from './CardItemsMonthTable';
 import { BankPage } from './bank';
 import { createRoutes } from '../router';
 
@@ -20,6 +21,7 @@ export const routes = createRoutes({
   '/card-items': CardItems,
   '/card-items-by-month': CardItemsByMonth,
   '/card-items-by-month-detail/:year/:month': CardItemsByMonthDetail,
+  '/card-items-month-table': CardItemsMonthTable,
   '/bank-items': BankPage,
   '/not-found': NotFound,
 });

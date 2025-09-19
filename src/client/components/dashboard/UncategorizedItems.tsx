@@ -56,10 +56,13 @@ export const UncategorizedItems: React.FC<UncategorizedItemsProps> = ({
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [multiSelectMode, setMultiSelectMode] = useState<boolean>(false);
 
-    // Filter items that don't have a category
-    const uncategorizedItems = items.filter(item =>
-        !item.Category || item.Category.trim() === '' || item.Category === 'Uncategorized'
-    ).slice(0, limit);
+    // Filter items that don't have a category, including literal "null" values
+    const uncategorizedItems = items
+        .filter(item => {
+            const normalized = ((item.Category ?? '') as string).toString().trim().toLowerCase();
+            return normalized === '' || normalized === 'uncategorized' || normalized === 'null';
+        })
+        .slice(0, limit);
 
     // Helper function to notify parent of updates
     const notifyParentOfUpdates = (updatedItems: CardItem[]) => {
