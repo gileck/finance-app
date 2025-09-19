@@ -30,6 +30,7 @@ import {
     CircularProgress,
     Alert
 } from '@mui/material';
+import { useTheme, useMediaQuery } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -60,6 +61,9 @@ const formatCurrency = (value: number, currency?: string) => {
 };
 
 export const CardItemsMonthTable: React.FC = () => {
+    const theme = useTheme();
+    const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
+    const isXs = useMediaQuery(theme.breakpoints.down('sm'));
     const router = useRouter();
     const initialYear = useMemo(() => {
         const qpYear = parseInt(router.queryParams.year || '');
@@ -222,6 +226,10 @@ export const CardItemsMonthTable: React.FC = () => {
         return sorted;
     }, [items, searchTerm, selectedCategory, minAmount, maxAmount, sortBy, sortDirection]);
 
+    // Reserve fixed space for edge columns; keep Amount tight and centered
+    const dateColWidth = isSmUp ? 110 : 72;
+    const amountColWidth = isSmUp ? '11ch' : '10ch';
+
     // Item details dialog state
     const [detailsDialogOpen, setDetailsDialogOpen] = useState<boolean>(false);
     const [selectedItem, setSelectedItem] = useState<CardItem | null>(null);
@@ -284,11 +292,13 @@ export const CardItemsMonthTable: React.FC = () => {
 
     return (
         <Container maxWidth="lg">
-            <Box mt={3} mb={2} display="flex" alignItems="center" justifyContent="space-between" gap={1.5}>
+            <Box mt={0} mb={2} display="flex" alignItems="center" justifyContent="space-between" gap={1.5}>
                 <IconButton aria-label="Previous month" onClick={handlePrevMonth} sx={{ width: 44, height: 44 }}>
                     <NavigateBeforeIcon />
                 </IconButton>
-                <Typography variant="h4" component="h1" sx={{ fontSize: { xs: 'clamp(20px, 5vw, 24px)', sm: 'clamp(24px, 3.2vw, 32px)' }, fontWeight: 700 }}>
+                <Typography variant="h4"
+                    component="h1"
+                    sx={{ fontSize: { xs: 'clamp(20px, 5vw, 24px)', sm: 'clamp(24px, 3.2vw, 32px)' }, fontWeight: 700 }}>
                     {monthNames[month - 1]} {year}
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1}>
@@ -407,10 +417,15 @@ export const CardItemsMonthTable: React.FC = () => {
                         </Box>
                     ) : (
                         <TableContainer component="div" sx={{ width: '100%', p: 0, m: 0, boxShadow: 'none', backgroundColor: 'transparent' }}>
-                            <Table size="small" sx={{ width: '100%', tableLayout: 'auto', borderCollapse: 'collapse' }}>
+                            <Table size="small" sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+                                <colgroup>
+                                    <col style={{ width: dateColWidth }} />
+                                    <col style={{ width: 'auto' }} />
+                                    <col style={{ width: amountColWidth }} />
+                                </colgroup>
                                 <TableHead>
                                     <TableRow>
-                                        <TableCell sortDirection={sortBy === 'date' ? sortDirection : false} sx={{ borderBottom: 'none', width: { xs: 84, sm: 110 }, whiteSpace: 'nowrap' }} align="left">
+                                        <TableCell sortDirection={sortBy === 'date' ? sortDirection : false} sx={{ borderBottom: 'none', whiteSpace: 'nowrap' }} align="left">
                                             <TableSortLabel
                                                 active={sortBy === 'date'}
                                                 direction={sortBy === 'date' ? sortDirection : 'asc'}
@@ -428,11 +443,18 @@ export const CardItemsMonthTable: React.FC = () => {
                                                 Name
                                             </TableSortLabel>
                                         </TableCell>
-                                        <TableCell align="right" sortDirection={sortBy === 'amount' ? sortDirection : false} sx={{ borderBottom: 'none', width: { xs: 80, sm: 110 }, whiteSpace: 'nowrap' }}>
+                                        <TableCell align="center" sortDirection={sortBy === 'amount' ? sortDirection : false} sx={{ borderBottom: 'none', whiteSpace: 'nowrap', px: 0 }}>
                                             <TableSortLabel
                                                 active={sortBy === 'amount'}
                                                 direction={sortBy === 'amount' ? sortDirection : 'asc'}
                                                 onClick={() => handleSort('amount')}
+                                                sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    width: '100%',
+                                                    paddingLeft: sortBy === 'amount' ? 0 : '25px'
+
+                                                }}
                                             >
                                                 Amount
                                             </TableSortLabel>
@@ -454,9 +476,9 @@ export const CardItemsMonthTable: React.FC = () => {
                                                 onClick={() => handleRowClick(item)}
                                                 sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' }, cursor: 'pointer' }}
                                             >
-                                                <TableCell sx={{ borderBottom: 'none', width: { xs: 84, sm: 110 }, whiteSpace: 'nowrap' }} align="left">{new Date(item.Date).toLocaleString('default', { month: 'short', day: 'numeric' })}</TableCell>
+                                                <TableCell sx={{ borderBottom: 'none', whiteSpace: 'nowrap' }} align="left">{new Date(item.Date).toLocaleString('default', { month: 'short', day: 'numeric' })}</TableCell>
                                                 <TableCell sx={{ overflow: 'hidden', borderBottom: 'none' }} align="left">
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                                         <Typography sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                             {item.DisplayName || item.Name}
                                                         </Typography>
@@ -465,7 +487,7 @@ export const CardItemsMonthTable: React.FC = () => {
                                                         </Typography>
                                                     </Box>
                                                 </TableCell>
-                                                <TableCell align="right" sx={{ borderBottom: 'none', width: { xs: 80, sm: 110 }, whiteSpace: 'nowrap' }}>{formatCurrency(item.Amount, item.Currency)}</TableCell>
+                                                <TableCell align="center" sx={{ borderBottom: 'none', whiteSpace: 'nowrap', px: 0.5 }}>{formatCurrency(item.Amount, item.Currency)}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
