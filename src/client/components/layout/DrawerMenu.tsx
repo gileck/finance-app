@@ -1,4 +1,4 @@
-import { Drawer, Box, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Drawer, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { useRouter } from '../../router';
 import { NavItem } from '../../components/layout/types';
 
@@ -21,7 +21,7 @@ export const DrawerMenu = ({ navItems, mobileOpen, onDrawerToggle }: DrawerMenuP
       <List>
         {navItems.map((item) => (
           <ListItem key={item.path} disablePadding>
-            <ListItemButton 
+            <ListItemButton
               sx={{ textAlign: 'center' }}
               onClick={() => handleNavigation(item.path)}
               selected={currentPath === item.path}

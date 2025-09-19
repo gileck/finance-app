@@ -23,6 +23,7 @@ export interface CardItem {
     Phone?: string;
   };
   version?: string;
+  tripId?: string;
 }
 
 export interface MonthlyTotal {
@@ -48,6 +49,7 @@ export interface GetCardItemsRequest {
     pendingTransactionOnly?: boolean;
     hasVersion?: boolean;
     specificVersion?: string;
+    tripId?: string;
   };
   // Pagination parameters
   pagination?: {

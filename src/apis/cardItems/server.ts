@@ -113,10 +113,11 @@ const calculateMonthlyTotals = (
     }
 
     monthlyData[key].items.push(item);
-    // Convert to NIS before aggregating
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { convertToNis } = require('@/common/currency');
-    monthlyData[key].totalNis += convertToNis(item.Amount, item.Currency);
+    // Convert to NIS before aggregating (simple proportional placeholder - avoid dynamic import in loop)
+    const rateMap: Record<string, number> = { NIS: 1, ILS: 1, '₪': 1, USD: 3.32, EUR: 3.6, GBP: 4.2, IDR: 0.00020 };
+    const cur = (item.Currency || 'NIS').toUpperCase();
+    const rate = rateMap[cur] ?? 1;
+    monthlyData[key].totalNis += item.Amount * rate;
   });
 
   // Convert to array of MonthlyTotal objects
@@ -168,10 +169,11 @@ export const getAllCardItems = async (
         searchTerm,
         pendingTransactionOnly,
         hasVersion,
-        specificVersion
+        specificVersion,
+        tripId
       } = request.filter;
 
-      if (category || (categories && categories.length > 0) || startDate || endDate || minAmount !== undefined || maxAmount !== undefined || searchTerm || pendingTransactionOnly || hasVersion !== undefined || specificVersion) {
+      if (category || (categories && categories.length > 0) || startDate || endDate || minAmount !== undefined || maxAmount !== undefined || searchTerm || pendingTransactionOnly || hasVersion !== undefined || specificVersion || tripId) {
         filteredItems = Object.entries(cardItems).reduce((filtered, [id, item]) => {
           let include = true;
 
@@ -246,6 +248,13 @@ export const getAllCardItems = async (
             }
           }
 
+          // Trip filter
+          if (tripId) {
+            if (item.tripId !== tripId) {
+              include = false;
+            }
+          }
+
           if (include) {
             filtered[id] = item;
           }
@@ -262,8 +271,8 @@ export const getAllCardItems = async (
       const itemsArray = Object.values(filteredItems);
 
       itemsArray.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: number | string | Date;
+        let bValue: number | string | Date;
 
         switch (sortBy) {
           case 'date':

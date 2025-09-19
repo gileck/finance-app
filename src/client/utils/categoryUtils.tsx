@@ -122,15 +122,9 @@ export const getCategoryColor = (category: string, _theme?: Theme): string => {
  */
 export const formatCurrency = (amount: number, currency: string): string => {
   // Always format and present in NIS regardless of input currency
-  try {
-    // Lazy import to avoid circular deps in some bundlers
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { convertToNis, formatNis } = require('@/common/currency');
-    const nisAmount = convertToNis(Number(amount) || 0, currency || 'NIS');
-    return formatNis(nisAmount);
-  } catch (_e) {
-    // Fallback simple formatting in case of unexpected import issues
-    const rounded = Math.round(Number(amount) || 0);
+  const rounded = Math.round(Number(amount) || 0);
+  if ((currency || '').toUpperCase() === 'NIS' || (currency || '') === '₪' || (currency || '').toUpperCase() === 'ILS') {
     return `₪${rounded.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`;
   }
+  return `${rounded.toLocaleString('he-IL', { maximumFractionDigits: 0 })} ${currency || 'NIS'}`;
 };

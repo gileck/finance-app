@@ -26,6 +26,8 @@ import {
 } from '@mui/icons-material';
 import { CardItem } from '@/apis/cardItems/types';
 import { ItemDetailsDialog } from '@/client/components/dashboard/ItemDetailsDialog';
+import { useTrips } from '@/client/routes/Trips/hooks/useTrips';
+import { useTripAssignment } from '@/client/routes/Trips/hooks/useTripAssignment';
 import { CategorySelectionDialog } from '@/client/components/shared/CategorySelectionDialog';
 import { updateCardItem } from '@/client/utils/cardItemOperations';
 import { formatCurrency } from '@/client/utils/categoryUtils';
@@ -148,6 +150,8 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
   monthRefs,
   onItemUpdate
 }) => {
+  const { trips, reload: reloadTrips } = useTrips();
+  const { assign } = useTripAssignment();
   const [localCardItems, setLocalCardItems] = useState<Record<string, CardItem>>(cardItems);
 
   useEffect(() => {
@@ -453,6 +457,27 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                                   sx={{ ml: 1 }}
                                 >
                                   <EditIcon fontSize="small" />
+                                </IconButton>
+                                <IconButton
+                                  edge="end"
+                                  aria-label="assign to trip"
+                                  onClick={async () => {
+                                    const tripOptions = Object.values(trips);
+                                    if (tripOptions.length === 0) {
+                                      alert('No trips found. Create a trip first in the Trips page.');
+                                      return;
+                                    }
+                                    const selection = prompt('Enter Trip ID to assign:\n' + tripOptions.map(t => `${t.id}: ${t.name} (${t.startDate}→${t.endDate})`).join('\n'));
+                                    const chosen = tripOptions.find(t => t.id === selection);
+                                    if (!chosen) return;
+                                    await assign(chosen.id, [item.id]);
+                                    await reloadTrips();
+                                    onItemUpdate?.({ ...item, tripId: chosen.id });
+                                  }}
+                                  size="small"
+                                  sx={{ ml: 1 }}
+                                >
+                                  <AddIcon fontSize="small" />
                                 </IconButton>
                                 <IconButton
                                   edge="end"

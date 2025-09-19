@@ -24,12 +24,12 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Chip,
-    OutlinedInput,
+
     Button,
     CircularProgress,
     Alert
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import { useTheme, useMediaQuery } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
@@ -63,7 +63,7 @@ const formatCurrency = (value: number, currency?: string) => {
 export const CardItemsMonthTable: React.FC = () => {
     const theme = useTheme();
     const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
-    const isXs = useMediaQuery(theme.breakpoints.down('sm'));
+
     const router = useRouter();
     const initialYear = useMemo(() => {
         const qpYear = parseInt(router.queryParams.year || '');
@@ -120,13 +120,13 @@ export const CardItemsMonthTable: React.FC = () => {
         updateUrl(newY, newM);
     };
 
-    const handleMonthSelect = (event: any) => {
+    const handleMonthSelect = (event: SelectChangeEvent<number>) => {
         const newM = Number(event.target.value);
         setMonth(newM);
         updateUrl(year, newM);
     };
 
-    const handleYearSelect = (event: any) => {
+    const handleYearSelect = (event: SelectChangeEvent<number>) => {
         const newY = Number(event.target.value);
         setYear(newY);
         updateUrl(newY, month);
@@ -195,8 +195,8 @@ export const CardItemsMonthTable: React.FC = () => {
 
         // Sort
         const sorted = [...result].sort((a, b) => {
-            let aValue: any;
-            let bValue: any;
+            let aValue: number | string;
+            let bValue: number | string;
             switch (sortBy) {
                 case 'date':
                     aValue = new Date(a.Date).getTime();
