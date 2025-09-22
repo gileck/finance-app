@@ -13,7 +13,8 @@ import {
   alpha,
   Avatar,
   Paper,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PlaceIcon from '@mui/icons-material/Place';
@@ -25,12 +26,16 @@ import FlightIcon from '@mui/icons-material/Flight';
 import CodeIcon from '@mui/icons-material/Code';
 import { CardItem } from '@/apis/cardItems/types';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
+import { deleteCardItem } from '@/client/utils/cardItemOperations';
+import SearchIcon from '@mui/icons-material/Search';
+import { useRouter } from '@/client/router';
 
 interface ItemDetailsDialogProps {
   open: boolean;
   item: CardItem | null;
   onClose: () => void;
   onEdit: (item: CardItem) => void;
+  onDelete?: (id: string) => void;
 }
 
 // Format date and time
@@ -53,10 +58,14 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
   open,
   item,
   onClose,
-  onEdit
+  onEdit,
+  onDelete
 }) => {
   const theme = useTheme();
   const [jsonDialogOpen, setJsonDialogOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { navigate } = useRouter();
 
   if (!item) {
     return null;
@@ -126,9 +135,23 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
               {getCategoryIcon(item.Category)}
             </Avatar>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
-                {item.DisplayName || item.Name}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                  {item.DisplayName || item.Name}
+                </Typography>
+                <Tooltip title="Search for this name" arrow>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const q = encodeURIComponent(item.DisplayName || item.Name || '');
+                      navigate(`/search?q=${q}`);
+                      onClose();
+                    }}
+                  >
+                    <SearchIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
 
               <Chip
                 label={item.Category}
@@ -310,6 +333,9 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
           </Box>
         </DialogContent>
         <DialogActions>
+          <Button onClick={() => setConfirmOpen(true)} color="error" disabled={deleting}>
+            {deleting ? 'Deleting…' : 'Delete'}
+          </Button>
           <Button onClick={onClose}>
             Close
           </Button>
@@ -353,6 +379,43 @@ export const ItemDetailsDialog: React.FC<ItemDetailsDialogProps> = ({
             color="primary"
           >
             Copy to Clipboard
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <Dialog open={confirmOpen} onClose={() => { if (!deleting) setConfirmOpen(false); }}>
+        <DialogTitle>Delete this transaction?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { if (!deleting) setConfirmOpen(false); }} disabled={deleting}>Cancel</Button>
+          <Button
+            onClick={async () => {
+              if (!item) return;
+              setDeleting(true);
+              try {
+                const res = await deleteCardItem(item.id);
+                if (res.success) {
+                  onDelete?.(item.id);
+                  setConfirmOpen(false);
+                  onClose();
+                } else {
+                  // eslint-disable-next-line no-console
+                  console.error(res.message);
+                }
+              } finally {
+                setDeleting(false);
+              }
+            }}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>

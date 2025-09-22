@@ -17,6 +17,8 @@ import {
   Typography
 } from '@mui/material';
 import { CardItem } from '@/apis/cardItems/types';
+import { getTrips } from '@/apis/trips/client';
+import type { Trip } from '@/apis/trips/types';
 
 interface CardItemEditDialogProps {
   open: boolean;
@@ -62,6 +64,7 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
 }) => {
   const [editedItem, setEditedItem] = useState<CardItem | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [trips, setTrips] = useState<Record<string, Trip>>({});
 
   // Update local state when cardItem changes
   useEffect(() => {
@@ -74,8 +77,22 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
     setLoading(false);
   }, [cardItem, open]);
 
+  // Load trips when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    const load = async () => {
+      try {
+        const res = await getTrips({});
+        if (res?.data?.trips) setTrips(res.data.trips);
+      } catch {
+        // ignore
+      }
+    };
+    void load();
+  }, [open]);
+
   // Handle form field changes
-  const handleFieldChange = (field: keyof CardItem, value: string | number | boolean) => {
+  const handleFieldChange = (field: keyof CardItem, value: string | number | boolean | undefined) => {
     if (editedItem) {
       setEditedItem({
         ...editedItem,
@@ -103,10 +120,10 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
   }
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={loading ? undefined : onClose} 
-      maxWidth="sm" 
+    <Dialog
+      open={open}
+      onClose={loading ? undefined : onClose}
+      maxWidth="sm"
       fullWidth
       disableEscapeKeyDown={loading}
     >
@@ -224,6 +241,26 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
               </Select>
             </FormControl>
           </Box>
+          <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+            <FormControl fullWidth margin="normal" disabled={loading}>
+              <InputLabel id="trip-label">Trip</InputLabel>
+              <Select
+                labelId="trip-label"
+                value={editedItem.tripId || ''}
+                onChange={(e) => handleFieldChange('tripId', (e.target.value as string) || undefined)}
+                label="Trip"
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {Object.values(trips).sort((a, b) => a.name.localeCompare(b.name)).map(trip => (
+                  <MenuItem key={trip.id} value={trip.id}>
+                    {trip.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
           <Box sx={{ width: '100%' }}>
             <TextField
               label="Comments"
@@ -254,9 +291,9 @@ export const CardItemEditDialog: React.FC<CardItemEditDialogProps> = ({
         <Button onClick={onClose} disabled={loading}>
           Cancel
         </Button>
-        <Button 
-          onClick={handleSave} 
-          variant="contained" 
+        <Button
+          onClick={handleSave}
+          variant="contained"
           color="primary"
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}

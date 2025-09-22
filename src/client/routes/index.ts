@@ -11,6 +11,8 @@ import { CardItemsMonthTable } from './CardItemsMonthTable';
 import { BankPage } from './bank';
 import { createRoutes } from '../router';
 import { TripsList, TripDetails } from './Trips';
+import { PendingItems } from './PendingItems';
+import { Search } from './Search';
 
 // Define routes
 export const routes = createRoutes({
@@ -26,5 +28,7 @@ export const routes = createRoutes({
   '/bank-items': BankPage,
   '/trips': TripsList,
   '/trips/:id': TripDetails,
+  '/pending-items': PendingItems,
+  '/search': Search,
   '/not-found': NotFound,
 });

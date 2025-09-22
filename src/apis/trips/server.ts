@@ -60,9 +60,22 @@ const generateId = (): string => {
 export const getAllTrips = async (request: GetTripsRequest): Promise<GetTripsResponse> => {
     try {
         const { trips } = await readDb();
+        // Backfill missing ids inside trip objects using their map keys (data fix for older entries)
+        let changed = false;
+        const fixedTrips: Record<string, Trip> = { ...trips };
+        Object.entries(trips).forEach(([key, t]) => {
+            if (!t.id || t.id.trim() === '') {
+                fixedTrips[key] = { ...t, id: key };
+                changed = true;
+            }
+        });
+        if (changed) {
+            await writeDb({ trips: fixedTrips });
+        }
+        const source = changed ? fixedTrips : trips;
         const search = request.filter?.search?.toLowerCase();
-        if (!search) return { trips };
-        const filtered = Object.entries(trips).reduce((acc, [id, t]) => {
+        if (!search) return { trips: source };
+        const filtered = Object.entries(source).reduce((acc, [id, t]) => {
             const hay = `${t.name} ${t.location || ''}`.toLowerCase();
             if (hay.includes(search)) acc[id] = t;
             return acc;
@@ -89,7 +102,7 @@ export const createTrip = async (request: CreateTripRequest): Promise<CreateTrip
         const { trips } = await readDb();
         const id = generateId();
         const now = new Date().toISOString();
-        const newTrip: Trip = { id, createdAt: now, updatedAt: now, ...request.trip };
+        const newTrip: Trip = { ...request.trip, id, createdAt: now, updatedAt: now };
         await writeDb({ trips: { ...trips, [id]: newTrip } });
         return { success: true, trip: newTrip };
     } catch (e) {

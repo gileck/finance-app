@@ -216,11 +216,18 @@ export const getAllCardItems = async (
           // Search term filtering (search in Name, DisplayName, and Comments)
           if (searchTerm && searchTerm.trim() !== '') {
             const searchLower = searchTerm.toLowerCase();
-            const nameMatch = item.Name.toLowerCase().includes(searchLower);
-            const displayNameMatch = item.DisplayName && item.DisplayName.toLowerCase().includes(searchLower);
-            const commentsMatch = item.Comments && item.Comments.some(comment =>
-              comment.toLowerCase().includes(searchLower)
-            );
+            const nameMatch = (item.Name || '').toLowerCase().includes(searchLower);
+            const displayNameMatch = typeof item.DisplayName === 'string' && item.DisplayName.toLowerCase().includes(searchLower);
+
+            let commentsMatch = false;
+            const commentsField = item.Comments as unknown;
+            if (Array.isArray(commentsField)) {
+              commentsMatch = commentsField.some((comment) =>
+                (comment ?? '').toString().toLowerCase().includes(searchLower)
+              );
+            } else if (typeof commentsField === 'string') {
+              commentsMatch = commentsField.toLowerCase().includes(searchLower);
+            }
 
             if (!nameMatch && !displayNameMatch && !commentsMatch) {
               include = false;

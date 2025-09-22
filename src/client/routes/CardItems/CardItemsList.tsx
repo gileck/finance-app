@@ -22,12 +22,12 @@ import {
   ExpandLess as ExpandLessIcon,
   ErrorOutline as ErrorOutlineIcon,
   Visibility as VisibilityIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Flight as FlightIcon
 } from '@mui/icons-material';
 import { CardItem } from '@/apis/cardItems/types';
+import type { Trip } from '@/apis/trips/types';
 import { ItemDetailsDialog } from '@/client/components/dashboard/ItemDetailsDialog';
-import { useTrips } from '@/client/routes/Trips/hooks/useTrips';
-import { useTripAssignment } from '@/client/routes/Trips/hooks/useTripAssignment';
 import { CategorySelectionDialog } from '@/client/components/shared/CategorySelectionDialog';
 import { updateCardItem } from '@/client/utils/cardItemOperations';
 import { formatCurrency } from '@/client/utils/categoryUtils';
@@ -38,6 +38,7 @@ interface CardItemsListProps {
   onDeleteClick: (id: string) => void;
   monthRefs?: React.MutableRefObject<Record<string, HTMLDivElement | null>>;
   onItemUpdate?: (updatedItem: CardItem) => void;
+  trips?: Record<string, Trip>;
 }
 
 // Helper to format date for divider (without year)
@@ -148,10 +149,10 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
   onEditClick,
   onDeleteClick,
   monthRefs,
-  onItemUpdate
+  onItemUpdate,
+  trips
 }) => {
-  const { trips, reload: reloadTrips } = useTrips();
-  const { assign } = useTripAssignment();
+
   const [localCardItems, setLocalCardItems] = useState<Record<string, CardItem>>(cardItems);
 
   useEffect(() => {
@@ -368,6 +369,15 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                                 <Typography variant="body1" fontWeight="medium">
                                   {item.DisplayName || item.Name}
                                 </Typography>
+                                {item.tripId && (
+                                  <Tooltip title="Assigned to trip" arrow>
+                                    <FlightIcon
+                                      color="primary"
+                                      fontSize="small"
+                                      sx={{ ml: 1 }}
+                                    />
+                                  </Tooltip>
+                                )}
                                 {item.PendingTransaction && (
                                   <Tooltip title="Pending Transaction" arrow>
                                     <ErrorOutlineIcon
@@ -384,6 +394,11 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                                 <Typography variant="body2" color="text.secondary">
                                   {formatDate(item.Date)}
                                 </Typography>
+                                {item.tripId && trips?.[item.tripId] && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {`Trip: ${trips[item.tripId].name}`}
+                                  </Typography>
+                                )}
                                 <Typography variant="body2" color="text.secondary">
                                   {item.Comments && `${item.Comments}`}
                                 </Typography>
@@ -457,27 +472,6 @@ export const CardItemsList: React.FC<CardItemsListProps> = ({
                                   sx={{ ml: 1 }}
                                 >
                                   <EditIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                  edge="end"
-                                  aria-label="assign to trip"
-                                  onClick={async () => {
-                                    const tripOptions = Object.values(trips);
-                                    if (tripOptions.length === 0) {
-                                      alert('No trips found. Create a trip first in the Trips page.');
-                                      return;
-                                    }
-                                    const selection = prompt('Enter Trip ID to assign:\n' + tripOptions.map(t => `${t.id}: ${t.name} (${t.startDate}→${t.endDate})`).join('\n'));
-                                    const chosen = tripOptions.find(t => t.id === selection);
-                                    if (!chosen) return;
-                                    await assign(chosen.id, [item.id]);
-                                    await reloadTrips();
-                                    onItemUpdate?.({ ...item, tripId: chosen.id });
-                                  }}
-                                  size="small"
-                                  sx={{ ml: 1 }}
-                                >
-                                  <AddIcon fontSize="small" />
                                 </IconButton>
                                 <IconButton
                                   edge="end"

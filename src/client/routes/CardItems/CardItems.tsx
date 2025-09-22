@@ -23,6 +23,8 @@ import { CardItem, GetCardItemsRequest } from '@/apis/cardItems/types';
 import { CardItemsList } from './CardItemsList';
 import { CardItemEditDialog } from '@/client/components/shared/CardItemEditDialog';
 import { updateCardItem, deleteCardItem } from '@/client/utils/cardItemOperations';
+import { getTrips } from '@/apis/trips/client';
+import type { Trip } from '@/apis/trips/types';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import { AdvancedFilterDialog, FilterOptions } from '@/client/components/filters/AdvancedFilterDialog';
@@ -76,6 +78,9 @@ export const CardItems = () => {
 
   // References for infinite scrolling
   const monthRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Trips map for resolving trip names under dates
+  const [trips, setTrips] = useState<Record<string, Trip>>({});
 
   // Update hasActiveFilters when activeFilters change
   useEffect(() => {
@@ -238,6 +243,21 @@ export const CardItems = () => {
     setOffset(0);
     fetchCardItems(0, INITIAL_MONTHS, false);
   }, [fetchCardItems, activeFilters]);
+
+  // Load trips once (non-blocking)
+  useEffect(() => {
+    const loadTrips = async () => {
+      try {
+        const res = await getTrips({});
+        if (res?.data?.trips) {
+          setTrips(res.data.trips);
+        }
+      } catch {
+        // ignore - optional enhancement only
+      }
+    };
+    void loadTrips();
+  }, []);
 
   // Set up intersection observer for month sections
   useEffect(() => {
@@ -749,6 +769,7 @@ export const CardItems = () => {
           onDeleteClick={handleDeleteClick}
           onItemUpdate={handleItemUpdate}
           monthRefs={monthRefs}
+          trips={trips}
         />
 
         {/* Loading more indicator */}
