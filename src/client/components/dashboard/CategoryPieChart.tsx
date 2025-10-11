@@ -16,8 +16,6 @@ import {
   Tooltip,
 } from 'recharts';
 import { CardItem } from '@/apis/cardItems/types';
-import { DashboardCard } from './DashboardCard';
-import PieChartIcon from '@mui/icons-material/PieChart';
 import { getCategoryIcon, getCategoryColor, formatCurrency } from '@/client/utils/categoryUtils';
 import { convertToNis } from '@/common/currency';
 import { CategoryItemsDialog } from './CategoryItemsDialog';
@@ -25,6 +23,9 @@ import { CategoryItemsDialog } from './CategoryItemsDialog';
 interface CategoryPieChartProps {
   items: CardItem[];
   loading: boolean;
+  totalBudgetNis?: number;
+  size?: 'normal' | 'large';
+  includeRemaining?: boolean;
 }
 
 interface CategoryTotal {
@@ -90,19 +91,7 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
       flexDirection: 'column',
       gap: 0.5,
       width: '100%',
-      maxHeight: '300px',
-      overflowY: 'auto',
-      pr: 1,
-      '&::-webkit-scrollbar': {
-        width: '4px',
-      },
-      '&::-webkit-scrollbar-track': {
-        background: alpha(theme.palette.primary.main, 0.05),
-      },
-      '&::-webkit-scrollbar-thumb': {
-        background: alpha(theme.palette.primary.main, 0.2),
-        borderRadius: '4px',
-      },
+      pr: 1
     }}>
       {payload.map((entry, index) => (
         <Box
@@ -140,11 +129,11 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
           <Typography
             variant="body2"
             sx={{
-              fontSize: { xs: '0.75rem', sm: '0.875rem' },
               flexGrow: 1,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              fontWeight: 500
             }}
           >
             {entry.value}
@@ -153,8 +142,7 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
             <Typography
               variant="body2"
               sx={{
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                fontWeight: 'medium',
+                fontWeight: 600,
                 color: theme.palette.text.primary,
                 whiteSpace: 'nowrap'
               }}
@@ -162,9 +150,8 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
               {formatCurrency(entry.amount, entry.currency)}
             </Typography>
             <Typography
-              variant="caption"
+              variant="body2"
               sx={{
-                fontSize: '0.7rem',
                 color: theme.palette.text.secondary,
                 whiteSpace: 'nowrap'
               }}
@@ -180,7 +167,10 @@ const CustomLegend = ({ payload, onCategoryClick }: LegendProps & { onCategoryCl
 
 export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
   items,
-  loading
+  loading,
+  totalBudgetNis,
+  size = 'normal',
+  includeRemaining = true
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -208,61 +198,74 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
       grandTotal += nisAmount;
     });
 
-    // Second pass: calculate percentages
-    if (grandTotal > 0) {
-      Object.values(categories).forEach(category => {
-        category.percentage = (category.value / grandTotal) * 100;
+    // Determine denominator: total budget if provided, else sum of expenses
+    const denominator = totalBudgetNis && totalBudgetNis > 0 ? totalBudgetNis : grandTotal;
+
+    // Prepare array and compute percentages
+    const result: CategoryTotal[] = Object.values(categories).sort((a, b) => b.value - a.value);
+    if (denominator > 0) {
+      result.forEach(category => {
+        category.percentage = (category.value / denominator) * 100;
       });
     }
 
-    // Sort by value (descending)
-    return Object.values(categories)
-      .sort((a, b) => b.value - a.value);
+    // If budget is provided, add a remaining balance slice to complete the 100%
+    if (includeRemaining && totalBudgetNis && totalBudgetNis > 0) {
+      const spent = grandTotal;
+      const remaining = Math.max(totalBudgetNis - spent, 0);
+      if (remaining > 0) {
+        result.push({
+          name: 'Remaining Budget',
+          value: remaining,
+          percentage: (remaining / denominator) * 100
+        });
+      }
+    }
+
+    return result;
   };
 
   const categoryTotals = calculateCategoryTotals();
   const currency = 'NIS';
 
+  // Derive totals for center label and top summary
+  const spentTotalNis = categoryTotals
+    .filter(c => c.name !== 'Remaining Budget')
+    .reduce((sum, c) => sum + c.value, 0);
+  const denominator = totalBudgetNis && totalBudgetNis > 0 ? totalBudgetNis : spentTotalNis;
+  const percentUsed = denominator > 0 ? (spentTotalNis / denominator) * 100 : 0;
+  const top3 = categoryTotals.filter(c => c.name !== 'Remaining Budget').slice(0, 3);
+
   if (loading) {
     return (
-      <DashboardCard
-        title="Categories Breakdown"
-        icon={<PieChartIcon />}
-        color="secondary"
-      >
-        <Box display="flex" justifyContent="center" alignItems="center" height="100%" minHeight={150}>
-          <CircularProgress size={40} />
-        </Box>
-      </DashboardCard>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={150}>
+        <CircularProgress size={40} />
+      </Box>
     );
   }
 
   if (categoryTotals.length === 0) {
     return (
-      <DashboardCard
-        title="Categories Breakdown"
-        icon={<PieChartIcon />}
-        color="secondary"
-      >
-        <Box display="flex" justifyContent="center" alignItems="center" height="100%" minHeight={150}>
-          <Typography variant="body1" color="text.secondary">
-            No data available
-          </Typography>
-        </Box>
-      </DashboardCard>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={150}>
+        <Typography variant="body1" color="text.secondary">
+          No data available
+        </Typography>
+      </Box>
     );
   }
 
   // For the legend, show only top categories if there are too many
   const legendItems = categoryTotals.slice(0, 15);
 
+  const colorFor = (name: string) => {
+    if (name === 'Remaining Budget') {
+      return theme.palette.grey[400];
+    }
+    return getCategoryColor(name, theme);
+  };
+
   return (
-    <DashboardCard
-      title="Categories Breakdown"
-      icon={<PieChartIcon />}
-      color="secondary"
-      height={isMobile ? 'auto' : 380}
-    >
+    <Box>
       <Box
         sx={{
           position: 'relative',
@@ -295,11 +298,11 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
           <Stack spacing={2} sx={{ width: '100%' }}>
             {/* Chart */}
             <Box
-              height={200}
+              height={size === 'large' ? 600 : 300}
               display="flex"
               alignItems="center"
               justifyContent="center"
-              sx={{ zIndex: 1 }}
+              sx={{ zIndex: 1, position: 'relative' }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -307,8 +310,8 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     data={categoryTotals}
                     cx="50%"
                     cy="50%"
-                    innerRadius={40}
-                    outerRadius={70}
+                    innerRadius={size === 'large' ? 120 : 60}
+                    outerRadius={size === 'large' ? 220 : 120}
                     paddingAngle={4}
                     dataKey="value"
                     strokeWidth={2}
@@ -318,7 +321,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     {categoryTotals.map((entry) => (
                       <Cell
                         key={`cell-${entry.name}`}
-                        fill={getCategoryColor(entry.name, theme)}
+                        fill={colorFor(entry.name)}
                         style={{
                           filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
                           cursor: 'pointer'
@@ -329,6 +332,25 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+
+              {/* Center label */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center'
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">Expenses</Typography>
+                <Typography variant="subtitle1" fontWeight={700}>
+                  {formatCurrency(spentTotalNis, 'NIS')}
+                </Typography>
+                {totalBudgetNis ? (
+                  <Typography variant="caption" color="text.secondary">{percentUsed.toFixed(0)}% of budget</Typography>
+                ) : null}
+              </Box>
             </Box>
 
             {/* Legend */}
@@ -341,7 +363,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
               <CustomLegend
                 payload={legendItems.map((item) => ({
                   value: item.name,
-                  color: getCategoryColor(item.name, theme),
+                  color: colorFor(item.name),
                   percentage: item.percentage,
                   amount: item.value,
                   currency
@@ -352,15 +374,14 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
           </Stack>
         ) : (
           // For desktop, use side-by-side layout
-          <Box display="flex" flexDirection="row" height="100%">
+          <Box display="flex" flexDirection="row" minHeight={size === 'large' ? 700 : 400}>
             {/* Chart */}
             <Box
               width="50%"
-              height="100%"
               display="flex"
               alignItems="center"
               justifyContent="center"
-              sx={{ zIndex: 1 }}
+              sx={{ zIndex: 1, position: 'relative' }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -368,8 +389,8 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     data={categoryTotals}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
+                    innerRadius={size === 'large' ? 150 : 80}
+                    outerRadius={size === 'large' ? 280 : 140}
                     paddingAngle={4}
                     dataKey="value"
                     strokeWidth={2}
@@ -379,7 +400,7 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                     {categoryTotals.map((entry) => (
                       <Cell
                         key={`cell-${entry.name}`}
-                        fill={getCategoryColor(entry.name, theme)}
+                        fill={colorFor(entry.name)}
                         style={{
                           filter: 'drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.1))',
                           cursor: 'pointer'
@@ -390,6 +411,25 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
+
+              {/* Center label */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  textAlign: 'center'
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">Expenses</Typography>
+                <Typography variant="h6" fontWeight={800}>
+                  {formatCurrency(spentTotalNis, 'NIS')}
+                </Typography>
+                {totalBudgetNis ? (
+                  <Typography variant="caption" color="text.secondary">{percentUsed.toFixed(0)}% of budget</Typography>
+                ) : null}
+              </Box>
             </Box>
 
             {/* Legend */}
@@ -398,13 +438,19 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
               display="flex"
               alignItems="flex-start"
               justifyContent="flex-start"
-              height="100%"
               sx={{ zIndex: 1 }}
             >
+              {/* Top 3 summary */}
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Top: {top3.map((t) => `${t.name}: ${t.percentage.toFixed(1)}%`).join(' • ')}
+                </Typography>
+              </Box>
+
               <CustomLegend
                 payload={legendItems.map((item) => ({
                   value: item.name,
-                  color: getCategoryColor(item.name, theme),
+                  color: colorFor(item.name),
                   percentage: item.percentage,
                   amount: item.value,
                   currency
@@ -425,6 +471,6 @@ export const CategoryPieChart: React.FC<CategoryPieChartProps> = ({
           items={items.filter(item => item.Category === selectedCategory)}
         />
       )}
-    </DashboardCard>
+    </Box>
   );
 };

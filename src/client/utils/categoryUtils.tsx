@@ -10,7 +10,7 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import CardGiftcardIcon from '@mui/icons-material/CardGiftcard';
 import LocalAirportIcon from '@mui/icons-material/LocalAirport';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { BikeScooter, Computer, EnergySavingsLeaf, Face, Paid } from '@mui/icons-material';
+import { BikeScooter, Computer, EnergySavingsLeaf, Face, Paid, TrendingUp } from '@mui/icons-material';
 import { SvgIconProps } from '@mui/material';
 
 // Define a type for our icon components
@@ -39,7 +39,8 @@ const categoryToIcon: CategoryIconMap = {
   'internet': Computer,
   'bills': LocalAtmIcon,
   'money transfer': Paid,
-  'clothing': ShoppingBagIcon
+  'clothing': ShoppingBagIcon,
+  'investment': TrendingUp
 };
 
 /**
@@ -99,6 +100,7 @@ export const getCategoryColor = (category: string, _theme?: Theme): string => {
     'insurance': '#757575', // Grey
     'taxes': '#546E7A', // Blue grey
     'investments': '#00ACC1', // Cyan
+    'investment': '#1976D2', // Blue
     'utilities': '#FB8C00', // Orange
     'rent': '#C0CA33', // Lime
     'mortgage': '#AFB42B', // Lime

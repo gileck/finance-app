@@ -8,6 +8,7 @@ import { CardItems } from './CardItems';
 import { CardItemsByMonth } from './CardItemsByMonth';
 import { CardItemsByMonthDetail } from './CardItemsByMonthDetail';
 import { CardItemsMonthTable } from './CardItemsMonthTable';
+import { YearlyExpenses } from './YearlyExpenses/YearlyExpenses';
 import { BankPage } from './bank';
 import { createRoutes } from '../router';
 import { TripsList, TripDetails } from './Trips';
@@ -25,6 +26,7 @@ export const routes = createRoutes({
   '/card-items-by-month': CardItemsByMonth,
   '/card-items-by-month-detail/:year/:month': CardItemsByMonthDetail,
   '/card-items-month-table': CardItemsMonthTable,
+  '/yearly-expenses': YearlyExpenses,
   '/bank-items': BankPage,
   '/trips': TripsList,
   '/trips/:id': TripDetails,
