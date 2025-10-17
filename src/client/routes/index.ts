@@ -14,6 +14,7 @@ import { createRoutes } from '../router';
 import { TripsList, TripDetails } from './Trips';
 import { PendingItems } from './PendingItems';
 import { Search } from './Search';
+import { MoneyTransfersNaming } from './MoneyTransfersNaming';
 
 // Define routes
 export const routes = createRoutes({
@@ -31,6 +32,7 @@ export const routes = createRoutes({
   '/trips': TripsList,
   '/trips/:id': TripDetails,
   '/pending-items': PendingItems,
+  '/money-transfers-naming': MoneyTransfersNaming,
   '/search': Search,
   '/not-found': NotFound,
 });

@@ -11,3 +11,4 @@ export { UncategorizedItems } from './UncategorizedItems';
 export { PreviousMonthsList } from './PreviousMonthsList';
 export { ItemDetailsDialog } from './ItemDetailsDialog';
 export { CategoryItemsDialog } from './CategoryItemsDialog'; 
+export { MoneyTransfersMonthList } from './MoneyTransfersMonthList';

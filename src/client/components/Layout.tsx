@@ -25,6 +25,7 @@ export const Layout = ({ children }: { children?: ReactNode }) => {
     setMobileOpen(!mobileOpen);
   };
 
+
   return (
     <Box sx={{
       display: 'flex',

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Box, Button, Container, Paper, Stack, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, CircularProgress, Tooltip, Collapse } from '@mui/material';
+import { Box, Button, Container, Paper, Stack, TextField, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, CircularProgress, Tooltip, Collapse, Snackbar, Alert } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -10,6 +10,8 @@ import type { CardItem, GetCardItemsRequest, GetCardItemsResponse } from '@/apis
 import type { CacheResult } from '@/server/cache/types';
 import { useTheme, useMediaQuery } from '@mui/material';
 import { ItemDetailsDialog } from '@/client/components/dashboard/ItemDetailsDialog';
+import { CardItemEditDialog } from '@/client/components/shared/CardItemEditDialog';
+import { updateCardItem } from '@/client/utils/cardItemOperations';
 
 export const Search: React.FC = () => {
     const { queryParams, navigate } = useRouter();
@@ -32,6 +34,17 @@ export const Search: React.FC = () => {
     const canSearch = useMemo(() => query.trim().length > 0 || startDate || endDate, [query, startDate, endDate]);
     const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
     const [detailsItem, setDetailsItem] = useState<CardItem | null>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+    const [editItem, setEditItem] = useState<CardItem | null>(null);
+    const [snackbar, setSnackbar] = useState<{
+        open: boolean;
+        message: string;
+        severity: 'success' | 'error' | 'info' | 'warning';
+    }>({
+        open: false,
+        message: '',
+        severity: 'info'
+    });
 
     const performSearch = async (q: string, sd?: string, ed?: string) => {
         setLoading(true);
@@ -75,6 +88,49 @@ export const Search: React.FC = () => {
         const path = params.toString() ? `/search?${params.toString()}` : '/search';
         navigate(path);
         performSearch(query, startDate, endDate);
+    };
+
+    // Handle edit click
+    const handleEditClick = (item: CardItem) => {
+        setEditItem({ ...item });
+        setEditDialogOpen(true);
+        // Close details dialog if open
+        setDetailsOpen(false);
+    };
+
+    // Handle edit dialog close
+    const handleCloseEditDialog = () => {
+        setEditDialogOpen(false);
+        setEditItem(null);
+    };
+
+    // Handle save changes
+    const handleSaveChanges = async (updatedItem: CardItem): Promise<void> => {
+        const result = await updateCardItem(updatedItem);
+
+        setSnackbar({
+            open: true,
+            message: result.message,
+            severity: result.severity
+        });
+
+        if (result.success && result.updatedItem) {
+            // Update local state
+            setResults(prevItems => ({
+                ...prevItems,
+                [updatedItem.id]: updatedItem
+            }));
+
+            handleCloseEditDialog();
+        }
+    };
+
+    // Handle snackbar close
+    const handleSnackbarClose = () => {
+        setSnackbar(prev => ({
+            ...prev,
+            open: false
+        }));
     };
 
     const itemsArray = useMemo(() => Object.values(results), [results]);
@@ -275,7 +331,7 @@ export const Search: React.FC = () => {
                 open={detailsOpen}
                 item={detailsItem}
                 onClose={() => { setDetailsOpen(false); setDetailsItem(null); }}
-                onEdit={() => { /* edit can be added later */ }}
+                onEdit={handleEditClick}
                 onDelete={(id) => {
                     setResults(prev => {
                         const copy = { ...prev };
@@ -284,6 +340,32 @@ export const Search: React.FC = () => {
                     });
                 }}
             />
+
+            {/* Edit Dialog */}
+            {editItem && (
+                <CardItemEditDialog
+                    open={editDialogOpen}
+                    onClose={handleCloseEditDialog}
+                    cardItem={editItem}
+                    onSave={handleSaveChanges}
+                />
+            )}
+
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleSnackbarClose}
+            >
+                <Alert
+                    onClose={handleSnackbarClose}
+                    severity={snackbar.severity}
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };

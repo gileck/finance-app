@@ -8,6 +8,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import SearchIcon from '@mui/icons-material/Search';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 
 export const navItems: NavItem[] = [
   { path: '/', label: 'Home', icon: <HomeIcon /> },
@@ -22,6 +23,7 @@ export const menuItems: NavItem[] = [
   { path: '/card-items-by-month', label: 'Monthly Totals', icon: <CalendarMonthIcon /> },
   { path: '/yearly-expenses', label: 'Yearly Expenses', icon: <InsightsIcon /> },
   { path: '/card-items-month-table', label: 'Monthly Items (Table)', icon: <CalendarMonthIcon /> },
+  { path: '/money-transfers-naming', label: 'Transfers Naming', icon: <EditNoteIcon /> },
   { path: '/pending-items', label: 'Pending Items', icon: <ErrorOutlineIcon /> },
   { path: '/trips', label: 'Trips', icon: <FlightTakeoffIcon /> },
   { path: '/search', label: 'Search', icon: <SearchIcon /> },

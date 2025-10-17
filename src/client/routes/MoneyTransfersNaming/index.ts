@@ -1,0 +1,3 @@
+export { MoneyTransfersNaming } from './MoneyTransfersNaming';
+
+

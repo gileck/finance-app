@@ -10,7 +10,8 @@ import { RecentExpenses } from './RecentExpenses';
 import { CategoryPieChart } from './CategoryPieChart';
 import { RecurringTransactions } from './RecurringTransactions';
 import { PendingItems } from './PendingItems';
-import { UncategorizedItems } from './UncategorizedItems';
+// import { UncategorizedItems } from './UncategorizedItems';
+import { MoneyTransfersMonthList } from './MoneyTransfersMonthList';
 
 export const Dashboard: React.FC = () => {
   const [cardItems, setCardItems] = useState<CardItem[]>([]);
@@ -80,26 +81,7 @@ export const Dashboard: React.FC = () => {
     return date.toLocaleString('default', { month: 'long', year: 'numeric' });
   };
 
-  // Handle item update (for category changes, etc.)
-  const handleItemUpdate = (updatedItem: CardItem) => {
-    setCardItems(prev => {
-      const newItems = prev.map(item =>
-        item.id === updatedItem.id ? updatedItem : item
-      );
-      return newItems;
-    });
-  };
-
-  // Handle batch item update (for multiple category changes at once)
-  const handleBatchItemUpdate = (updatedItems: CardItem[]) => {
-    setCardItems(prev => {
-      const updatedItemsMap = new Map(updatedItems.map(item => [item.id, item]));
-      const newItems = prev.map(item =>
-        updatedItemsMap.has(item.id) ? updatedItemsMap.get(item.id)! : item
-      );
-      return newItems;
-    });
-  };
+  // Handlers removed (no longer used in current dashboard composition)
 
   // Get card items for selected month
   useEffect(() => {
@@ -324,14 +306,15 @@ export const Dashboard: React.FC = () => {
           <RecurringTransactions limit={10} />
         </Box>
 
-        {/* Category Pie Chart */}
+        {/* Money Transfers This Month */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 1, md: 0 }
         }}>
-          <CategoryPieChart
+          <MoneyTransfersMonthList
             items={cardItems}
             loading={loadingItems}
+            limit={6}
           />
         </Box>
       </Box>
@@ -355,17 +338,14 @@ export const Dashboard: React.FC = () => {
           />
         </Box>
 
-        {/* Uncategorized Items */}
+        {/* Category Pie Chart */}
         <Box sx={{
           width: { xs: '100%', md: 'calc(50% - 12px)' },
           mb: { xs: 1, md: 0 }
         }}>
-          <UncategorizedItems
+          <CategoryPieChart
             items={cardItems}
             loading={loadingItems}
-            limit={10}
-            onItemUpdate={handleItemUpdate}
-            onBatchItemUpdate={handleBatchItemUpdate}
           />
         </Box>
       </Box>
